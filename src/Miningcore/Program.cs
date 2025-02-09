@@ -37,7 +37,6 @@ using Miningcore.Persistence.Dummy;
 using Miningcore.Persistence.Postgres;
 using Miningcore.Persistence.Postgres.Repositories;
 using Miningcore.Util;
-using NBitcoin.Zcash;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Schema;
 using Newtonsoft.Json.Schema.Generation;
@@ -766,14 +765,12 @@ public class Program : BackgroundService
     {
         await ConfigurePostgresCompatibilityOptions(services);
 
-        ZcashNetworks.Instance.EnsureRegistered();
-
         var messageBus = services.GetService<IMessageBus>();
         var rmsm = services.GetService<RecyclableMemoryStreamManager>();
 
         // Configure RecyclableMemoryStream
-        rmsm.MaximumFreeSmallPoolBytes = clusterConfig.Memory?.RmsmMaximumFreeSmallPoolBytes ?? 0x100000;   // 1 MB
-        rmsm.MaximumFreeLargePoolBytes = clusterConfig.Memory?.RmsmMaximumFreeLargePoolBytes ?? 0x800000;   // 8 MB
+        rmsm.Settings.MaximumLargePoolFreeBytes = clusterConfig.Memory?.RmsmMaximumFreeSmallPoolBytes ?? 0x100000;   // 1 MB
+        rmsm.Settings.MaximumLargePoolFreeBytes = clusterConfig.Memory?.RmsmMaximumFreeLargePoolBytes ?? 0x800000;   // 8 MB
 
         // Configure Verthash
         Verthash.messageBus = messageBus;

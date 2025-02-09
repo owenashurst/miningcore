@@ -48,7 +48,10 @@ public class AutofacModule : Module
 
         builder.RegisterInstance(new RecyclableMemoryStreamManager
         {
-            ThrowExceptionOnToArray = true
+            Settings =
+            {
+                ThrowExceptionOnToArray = true
+            }
         });
 
         builder.RegisterType<StandardClock>()
