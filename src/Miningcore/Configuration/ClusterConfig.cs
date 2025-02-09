@@ -637,7 +637,7 @@ public class PoolEndpoint
 {
     public string ListenAddress { get; set; }
     public string Name { get; set; }
-    public double Difficulty { get; set; }
+    public int Difficulty { get; set; }
     public TcpProxyProtocolConfig TcpProxyProtocol { get; set; }
     public VarDiffConfig VarDiff { get; set; }
 
@@ -670,32 +670,32 @@ public partial class VarDiffConfig
     /// <summary>
     /// Minimum difficulty
     /// </summary>
-    public double MinDiff { get; set; }
+    public int MinDiff { get; set; }
 
     /// <summary>
     /// Network difficulty will be used if it is lower than this
     /// </summary>
-    public double? MaxDiff { get; set; }
+    public int? MaxDiff { get; set; }
 
     /// <summary>
     /// Do not alter difficulty by more than this during a single retarget in either direction
     /// </summary>
-    public double? MaxDelta { get; set; }
+    public int? MaxDelta { get; set; }
 
     /// <summary>
     /// Try to get 1 share per this many seconds
     /// </summary>
-    public double TargetTime { get; set; }
+    public int TargetTime { get; set; }
 
     /// <summary>
     /// Check to see if we should retarget every this many seconds
     /// </summary>
-    public double RetargetTime { get; set; }
+    public int RetargetTime { get; set; }
 
     /// <summary>
     /// Allow submission frequency to diverge this much (%) from target time without triggering a retarget
     /// </summary>
-    public double VariancePercent { get; set; }
+    public int VariancePercent { get; set; }
 }
 
 public enum BanManagerKind

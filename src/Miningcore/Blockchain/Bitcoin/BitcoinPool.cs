@@ -10,7 +10,6 @@ using Miningcore.Extensions;
 using Miningcore.JsonRpc;
 using Miningcore.Messaging;
 using Miningcore.Mining;
-using Miningcore.Nicehash;
 using Miningcore.Notifications.Messages;
 using Miningcore.Persistence;
 using Miningcore.Persistence.Repositories;
@@ -33,9 +32,8 @@ public class BitcoinPool : PoolBase
         IMapper mapper,
         IMasterClock clock,
         IMessageBus messageBus,
-        RecyclableMemoryStreamManager rmsm,
-        NicehashService nicehashService) :
-        base(ctx, serializerSettings, cf, statsRepo, mapper, clock, messageBus, rmsm, nicehashService)
+        RecyclableMemoryStreamManager rmsm) :
+        base(ctx, serializerSettings, cf, statsRepo, mapper, clock, messageBus, rmsm)
     {
     }
 
@@ -69,17 +67,6 @@ public class BitcoinPool : PoolBase
         // setup worker context
         context.IsSubscribed = true;
         context.UserAgent = requestParams.FirstOrDefault()?.Trim();
-
-        // Nicehash support
-        var nicehashDiff = await GetNicehashStaticMinDiff(context, coin.Name, coin.GetAlgorithmName());
-
-        if(nicehashDiff.HasValue)
-        {
-            logger.Info(() => $"[{connection.ConnectionId}] Nicehash detected. Using API supplied difficulty of {nicehashDiff.Value}");
-
-            context.VarDiff = null; // disable vardiff
-            context.SetDifficulty(nicehashDiff.Value);
-        }
 
         // send intial update
         await connection.NotifyAsync(BitcoinStratumMethods.SetDifficulty, new object[] { context.Difficulty });
@@ -228,7 +215,8 @@ public class BitcoinPool : PoolBase
 
         try
         {
-            var requestedDiff = (double) Convert.ChangeType(request.Params, TypeCode.Double)!;
+
+            var requestedDiff = (int) Convert.ChangeType((request.Params as JArray)[0], TypeCode.Int32)!;
 
             // client may suggest higher-than-base difficulty, but not a lower one
             var poolEndpoint = poolConfig.Ports[connection.LocalEndpoint.Port];
@@ -240,6 +228,9 @@ public class BitcoinPool : PoolBase
 
                 logger.Info(() => $"[{connection.ConnectionId}] Difficulty set to {requestedDiff} as requested by miner");
             }
+
+            context.SetDifficulty(requestedDiff);
+            await connection.NotifyAsync(BitcoinStratumMethods.SetDifficulty, new object[] { requestedDiff });
         }
 
         catch(Exception ex)
@@ -300,7 +291,7 @@ public class BitcoinPool : PoolBase
     private void ConfigureMinimumDiff(StratumConnection connection, BitcoinWorkerContext context,
         IReadOnlyDictionary<string, JToken> extensionParams, Dictionary<string, object> result)
     {
-        var requestedDiff = extensionParams[BitcoinStratumExtensions.MinimumDiffValue].Value<double>();
+        var requestedDiff = extensionParams[BitcoinStratumExtensions.MinimumDiffValue].Value<int>();
 
         // client may suggest higher-than-base difficulty, but not a lower one
         var poolEndpoint = poolConfig.Ports[connection.LocalEndpoint.Port];
@@ -458,7 +449,7 @@ public class BitcoinPool : PoolBase
         }
     }
 
-    protected override async Task OnVarDiffUpdateAsync(StratumConnection connection, double newDiff, CancellationToken ct)
+    protected override async Task OnVarDiffUpdateAsync(StratumConnection connection, int newDiff, CancellationToken ct)
     {
         await base.OnVarDiffUpdateAsync(connection, newDiff, ct);
 

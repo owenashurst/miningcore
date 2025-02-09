@@ -458,10 +458,7 @@ public abstract class BitcoinJobManagerBase<TJob> : JobManagerBase<TJob>
         var addressInfoResponse = responses[4].Error == null ? responses[4].Response.ToObject<AddressInfo>() : null;
 
         // chain detection
-        if(!hasLegacyDaemon)
-            network = Network.GetNetwork(blockchainInfoResponse.Chain.ToLower());
-        else
-            network = daemonInfoResponse.Testnet ? Network.TestNet : Network.Main;
+        network = Network.GetNetwork(blockchainInfoResponse.Chain.ToLower());
 
         PostChainIdentifyConfigure();
 

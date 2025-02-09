@@ -104,7 +104,7 @@ public class BitcoinJobTests : TestBase
         {
             Miner = "yXHmbak4AdgK5vWamwqFtEijn2NpgLvmi4",
             ExtraNonce1 = "60000001",
-            Difficulty = 0.01,
+            Difficulty = 1,
             UserAgent = "cpuminer-multi/1.3.1"
         };
 

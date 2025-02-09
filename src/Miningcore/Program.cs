@@ -26,8 +26,6 @@ using Miningcore.Api.Middlewares;
 using Miningcore.Api.Responses;
 using Miningcore.Configuration;
 using Miningcore.Crypto.Hashing.Algorithms;
-using Miningcore.Crypto.Hashing.Equihash;
-using Miningcore.Crypto.Hashing.Ethash;
 using Miningcore.Extensions;
 using Miningcore.Messaging;
 using Miningcore.Mining;
@@ -776,13 +774,6 @@ public class Program : BackgroundService
         // Configure RecyclableMemoryStream
         rmsm.MaximumFreeSmallPoolBytes = clusterConfig.Memory?.RmsmMaximumFreeSmallPoolBytes ?? 0x100000;   // 1 MB
         rmsm.MaximumFreeLargePoolBytes = clusterConfig.Memory?.RmsmMaximumFreeLargePoolBytes ?? 0x800000;   // 8 MB
-
-        // Configure Equihash
-        EquihashSolver.messageBus = messageBus;
-        EquihashSolver.MaxThreads = clusterConfig.EquihashMaxThreads ?? 1;
-
-        // Configure Ethhash
-        Dag.messageBus = messageBus;
 
         // Configure Verthash
         Verthash.messageBus = messageBus;

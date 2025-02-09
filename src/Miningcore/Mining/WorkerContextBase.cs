@@ -1,5 +1,4 @@
 using Miningcore.Configuration;
-using Miningcore.Nicehash.API;
 using Miningcore.Time;
 using Miningcore.VarDiff;
 
@@ -13,7 +12,7 @@ public class ShareStats
 
 public class WorkerContextBase
 {
-    private double? pendingDifficulty;
+    private int? pendingDifficulty;
     private string userAgent;
 
     public ShareStats Stats { get; set; }
@@ -26,12 +25,12 @@ public class WorkerContextBase
     /// <summary>
     /// Difficulty assigned to this worker, either static or updated through VarDiffManager
     /// </summary>
-    public double Difficulty { get; set; }
+    public int Difficulty { get; set; }
 
     /// <summary>
     /// Previous difficulty assigned to this worker
     /// </summary>
-    public double? PreviousDifficulty { get; set; }
+    public int? PreviousDifficulty { get; set; }
 
     /// <summary>
     /// UserAgent reported by Stratum
@@ -42,14 +41,10 @@ public class WorkerContextBase
         set
         {
             userAgent = value;
-
-            IsNicehash = userAgent?.Contains(NicehashConstants.NicehashUA, StringComparison.OrdinalIgnoreCase) == true;
         }
     }
 
-    public bool IsNicehash { get; private set; }
-
-    public void Init(double difficulty, VarDiffConfig varDiffConfig, IMasterClock clock)
+    public void Init(int difficulty, VarDiffConfig varDiffConfig, IMasterClock clock)
     {
         Difficulty = difficulty;
         LastActivity = clock.Now;
@@ -66,7 +61,7 @@ public class WorkerContextBase
         }
     }
 
-    public void EnqueueNewDifficulty(double difficulty)
+    public void EnqueueNewDifficulty(int difficulty)
     {
         pendingDifficulty = difficulty;
     }
@@ -86,7 +81,7 @@ public class WorkerContextBase
         return false;
     }
 
-    public void SetDifficulty(double difficulty)
+    public void SetDifficulty(int difficulty)
     {
         PreviousDifficulty = Difficulty;
         Difficulty = difficulty;

@@ -1,9 +1,7 @@
 using AutoMapper;
 using Miningcore.Api.Responses;
 using Miningcore.Blockchain;
-using Miningcore.Blockchain.Ergo.Configuration;
 using Miningcore.Configuration;
-using Miningcore.Extensions;
 using Miningcore.Mining;
 
 namespace Miningcore.Api.Extensions;
@@ -24,14 +22,6 @@ public static class MiningPoolExtensions
 
         // pool fees
         poolInfo.PoolFeePercent = poolConfig.RewardRecipients != null ? (float) poolConfig.RewardRecipients.Sum(x => x.Percentage) : 0;
-
-        // strip security critical stuff
-        if(poolInfo.PaymentProcessing.Extra != null)
-        {
-            var extra = poolInfo.PaymentProcessing.Extra;
-
-            extra.StripValue(nameof(ErgoPaymentProcessingConfigExtra.WalletPassword));
-        }
 
         if(poolInfo.Ports != null)
         {

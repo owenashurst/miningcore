@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Globalization;
 using System.Net;
 using System.Reactive.Disposables;
@@ -12,7 +11,6 @@ using Miningcore.Blockchain;
 using Miningcore.Configuration;
 using Miningcore.Extensions;
 using Miningcore.Messaging;
-using Miningcore.Nicehash;
 using Miningcore.Notifications.Messages;
 using Miningcore.Persistence;
 using Miningcore.Persistence.Repositories;
@@ -39,8 +37,7 @@ public abstract class PoolBase : StratumServer,
         IMapper mapper,
         IMasterClock clock,
         IMessageBus messageBus,
-        RecyclableMemoryStreamManager rmsm,
-        NicehashService nicehashService) : base(ctx, messageBus, rmsm, clock)
+        RecyclableMemoryStreamManager rmsm) : base(ctx, messageBus, rmsm, clock)
     {
         Contract.RequiresNonNull(ctx);
         Contract.RequiresNonNull(serializerSettings);
@@ -49,13 +46,11 @@ public abstract class PoolBase : StratumServer,
         Contract.RequiresNonNull(mapper);
         Contract.RequiresNonNull(clock);
         Contract.RequiresNonNull(messageBus);
-        Contract.RequiresNonNull(nicehashService);
 
         this.serializerSettings = serializerSettings;
         this.cf = cf;
         this.statsRepo = statsRepo;
         this.mapper = mapper;
-        this.nicehashService = nicehashService;
     }
 
     protected PoolStats poolStats = new();
@@ -63,7 +58,6 @@ public abstract class PoolBase : StratumServer,
     protected readonly IConnectionFactory cf;
     protected readonly IStatsRepository statsRepo;
     protected readonly IMapper mapper;
-    protected readonly NicehashService nicehashService;
     protected readonly CompositeDisposable disposables = new();
     protected BlockchainStats blockchainStats;
     protected static readonly TimeSpan maxShareAge = TimeSpan.FromSeconds(6);
@@ -74,21 +68,22 @@ public abstract class PoolBase : StratumServer,
     protected abstract Task SetupJobManager(CancellationToken ct);
     protected abstract WorkerContextBase CreateWorkerContext();
 
-    protected double? GetStaticDiffFromPassparts(string[] parts)
+    protected int? GetStaticDiffFromPassparts(string[] parts)
     {
         if(parts == null || parts.Length == 0)
             return null;
 
         foreach(var part in parts)
         {
-            var m = regexStaticDiff.Match(part);
+            var match = regexStaticDiff.Match(part);
 
-            if(m.Success)
+            if(match.Success)
             {
-                var str = m.Groups[1].Value.Trim();
-                if(double.TryParse(str, NumberStyles.Float, CultureInfo.InvariantCulture, out var diff) &&
-                   !double.IsNaN(diff) && !double.IsInfinity(diff))
+                var str = match.Groups[1].Value.Trim();
+                if(int.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out var diff))
+                {
                     return diff;
+                }
             }
         }
 
@@ -152,9 +147,9 @@ public abstract class PoolBase : StratumServer,
                 VarDiffManager.Update(context, poolEndpoint.VarDiff, clock) :
                 VarDiffManager.IdleUpdate(context, poolEndpoint.VarDiff, clock);
 
-            if(newDiff != null)
+            if (newDiff != null)
             {
-                logger.Info(() => $"[{connection.ConnectionId}] VarDiff update to {Math.Round(newDiff.Value, 3)}{(idle ? " [IDLE]" : "")}");
+                logger.Info(() => $"[{connection.ConnectionId}] VarDiff update to {newDiff.Value}{(idle ? " [IDLE]" : "")}");
 
                 await OnVarDiffUpdateAsync(connection, newDiff.Value, ct);
             }
@@ -186,7 +181,7 @@ public abstract class PoolBase : StratumServer,
         });
     }
 
-    protected virtual Task OnVarDiffUpdateAsync(StratumConnection connection, double newDiff, CancellationToken _)
+    protected virtual Task OnVarDiffUpdateAsync(StratumConnection connection, int newDiff, CancellationToken _)
     {
         connection.Context.EnqueueNewDifficulty(newDiff);
 
@@ -320,14 +315,6 @@ public abstract class PoolBase : StratumServer,
             tasks.Add(RunVardiffIdleUpdaterAsync(poolConfig.VardiffIdleSweepInterval ?? 30, ct));
 
         await Task.WhenAll(tasks);
-    }
-
-    protected virtual async Task<double?> GetNicehashStaticMinDiff(WorkerContextBase context, string coinName, string algoName)
-    {
-        if(context.IsNicehash && clusterConfig.Nicehash?.EnableAutoDiff == true)
-            return await nicehashService.GetStaticDiff(coinName, algoName, CancellationToken.None);
-
-        return null;
     }
 
     private StratumEndpoint PoolEndpoint2IPEndpoint(int port, PoolEndpoint pep)
