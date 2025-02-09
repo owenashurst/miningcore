@@ -10,20 +10,13 @@ using Xunit.Abstractions;
 
 namespace Miningcore.Tests.Crypto;
 
-public class MerkleTreeTests : TestBase
+public class MerkleTreeTests(ITestOutputHelper output) : TestBase
 {
-    private readonly ITestOutputHelper output;
-
-    public MerkleTreeTests(ITestOutputHelper output)
-    {
-        this.output = output;
-    }
-
     [Fact]
     public void MerkleTree_SimpleTest_Branches()
     {
-        var value1 = Encoding.ASCII.GetBytes("1");
-        var value2 = Encoding.ASCII.GetBytes("2");
+        var value1 = "1"u8.ToArray();
+        var value2 = "2"u8.ToArray();
 
         var hashes = new List<byte[]>
         {
@@ -86,12 +79,12 @@ public class MerkleTreeTests : TestBase
         }
 
         var tree = new MerkleTree(hashesList);
-        var output = tree.Steps
+        var output1 = tree.Steps
             .Select(x => x.ToHexString())
             .ToArray();
 
-        foreach(var hex in output)
-            this.output.WriteLine(hex);
+        foreach(var hex in output1)
+            output.WriteLine(hex);
 
         var expectedOutput = new[]
         {
@@ -104,7 +97,7 @@ public class MerkleTreeTests : TestBase
             "3c7e141f9a3816f2131d3248540701e09e69f50e34e6a77059e785ae3b8263c7"
         };
 
-        output.ShouldBe(expectedOutput);
+        output1.ShouldBe(expectedOutput);
     }
 
     private static byte[] MerkelHash(byte[] input)
