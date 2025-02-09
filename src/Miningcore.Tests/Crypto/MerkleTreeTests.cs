@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using Shouldly;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -39,7 +40,7 @@ public class MerkleTreeTests : TestBase
             "064a9b4691e6c7c53f8cbe713c02ce1cfd22ce261e6fdf042f4d4e1cdd547cdb"
         };
 
-        Assert.Equal(expectedOutput, output);
+        output.ShouldBe(expectedOutput);
     }
 
     [Fact]
@@ -69,7 +70,7 @@ public class MerkleTreeTests : TestBase
             "3c7e141f9a3816f2131d3248540701e09e69f50e34e6a77059e785ae3b8263c7"
         };
 
-        Assert.Equal(expectedOutput, output);
+        output.ShouldBe(expectedOutput);
     }
 
     [Fact]
@@ -103,16 +104,13 @@ public class MerkleTreeTests : TestBase
             "3c7e141f9a3816f2131d3248540701e09e69f50e34e6a77059e785ae3b8263c7"
         };
 
-        Assert.Equal<string>(expectedOutput, output);
+        output.ShouldBe(expectedOutput);
     }
-
 
     private static byte[] MerkelHash(byte[] input)
     {
-        using(var hash = SHA256.Create())
-        {
-            var first = hash.ComputeHash(input, 0, input.Length);
-            return hash.ComputeHash(first);
-        }
+        using var hash = SHA256.Create();
+        var first = hash.ComputeHash(input, 0, input.Length);
+        return hash.ComputeHash(first);
     }
 }
