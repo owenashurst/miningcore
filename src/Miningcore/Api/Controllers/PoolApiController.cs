@@ -82,7 +82,14 @@ public class PoolApiController : ApiControllerBase
 
                 var minersByHashrate = await cf.Run(con => statsRepo.PagePoolMinersByHashrateAsync(con, config.Id, from, 0, 15, ct));
 
-                result.TopMiners = minersByHashrate.Select(mapper.Map<MinerPerformanceStats>).ToArray();
+                result.TopMiners = minersByHashrate
+                    .Select(miner =>
+                    {
+                        var mappedMiner = mapper.Map<MinerPerformanceStats>(miner);
+                        mappedMiner.Miner = FormatMinerAddress(mappedMiner.Miner);
+                        return mappedMiner;
+                    })
+                    .ToArray();
 
                 return result;
             }).ToArray())
@@ -149,7 +156,12 @@ public class PoolApiController : ApiControllerBase
         var from = clock.Now.AddHours(-topMinersRange);
 
         response.Pool.TopMiners = (await cf.Run(con => statsRepo.PagePoolMinersByHashrateAsync(con, pool.Id, from, 0, 15, ct)))
-            .Select(mapper.Map<MinerPerformanceStats>)
+            .Select(miner =>
+            {
+                var mappedMiner = mapper.Map<MinerPerformanceStats>(miner);
+                mappedMiner.Miner = FormatMinerAddress(mappedMiner.Miner);
+                return mappedMiner;
+            })
             .ToArray();
 
         return response;
@@ -203,7 +215,12 @@ public class PoolApiController : ApiControllerBase
         var start = end.AddHours(-topMinersRange);
 
         var miners = (await cf.Run(con => statsRepo.PagePoolMinersByHashrateAsync(con, pool.Id, start, page, pageSize, ct)))
-            .Select(mapper.Map<MinerPerformanceStats>)
+            .Select(miner =>
+            {
+                var mappedMiner = mapper.Map<MinerPerformanceStats>(miner);
+                mappedMiner.Miner = FormatMinerAddress(mappedMiner.Miner);
+                return mappedMiner;
+            })
             .ToArray();
 
         return miners;
@@ -702,5 +719,13 @@ public class PoolApiController : ApiControllerBase
         // map
         var result = mapper.Map<Responses.WorkerPerformanceStatsContainer[]>(stats);
         return result;
+    }
+
+    private string FormatMinerAddress(string address)
+    {
+        if (string.IsNullOrEmpty(address) || address.Length < 10)
+            return address;
+
+        return $"{address.Substring(0, 6)}...{address[^4..]}";
     }
 }
