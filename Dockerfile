@@ -3,7 +3,7 @@ WORKDIR /app
 RUN apt-get update && \
     apt-get -y install cmake build-essential libssl-dev pkg-config libboost-all-dev libsodium-dev libzmq5 libzmq3-dev golang-go
 COPY . .
-WORKDIR /app
+WORKDIR /app/src/Miningcore
 RUN dotnet publish -c Release --framework net8.0 -o ../../build
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
