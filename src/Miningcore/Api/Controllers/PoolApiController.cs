@@ -75,7 +75,7 @@ public class PoolApiController : ApiControllerBase
                 {
                     DateTime startTime = lastBlockTime.Value;
                     var poolEffort = await cf.Run(con => shareRepo.GetEffortBetweenCreatedAsync(con, config.Id, pool.ShareMultiplier, startTime, clock.Now));
-                    result.PoolEffort = poolEffort.Value;
+                    result.PoolEffort = poolEffort ?? 0;
                 }
 
                 var from = clock.Now.AddHours(-topMinersRange);
@@ -143,7 +143,7 @@ public class PoolApiController : ApiControllerBase
         {
             DateTime startTime = lastBlockTime.Value;
             var poolEffort = await cf.Run(con => shareRepo.GetEffortBetweenCreatedAsync(con, pool.Id, poolInstance.ShareMultiplier, startTime, clock.Now));
-            response.Pool.PoolEffort = poolEffort.Value;
+            response.Pool.PoolEffort = poolEffort ?? 0;
         }
 
         var from = clock.Now.AddHours(-topMinersRange);
@@ -218,7 +218,10 @@ public class PoolApiController : ApiControllerBase
 
         var blockStates = state is { Length: > 0 } ?
             state :
-            new[] { BlockStatus.Confirmed, BlockStatus.Pending, BlockStatus.Orphaned };
+            new[]
+            {
+                BlockStatus.Confirmed, BlockStatus.Pending, BlockStatus.Orphaned
+            };
 
         var blocks = (await cf.Run(con => blocksRepo.PageBlocksAsync(con, pool.Id, blockStates, page, pageSize, ct)))
             .Select(mapper.Map<Responses.Block>)
@@ -256,7 +259,10 @@ public class PoolApiController : ApiControllerBase
 
         var blockStates = state is { Length: > 0 } ?
             state :
-            new[] { BlockStatus.Confirmed, BlockStatus.Pending, BlockStatus.Orphaned };
+            new[]
+            {
+                BlockStatus.Confirmed, BlockStatus.Pending, BlockStatus.Orphaned
+            };
 
         uint pageCount = (uint) Math.Floor((await cf.Run(con => blocksRepo.GetPoolBlockCountAsync(con, poolId, ct))) / (double) pageSize);
 
@@ -388,6 +394,8 @@ public class PoolApiController : ApiControllerBase
                 if(!string.IsNullOrEmpty(baseUrl))
                     stats.LastPaymentLink = string.Format(baseUrl, statsResult.LastPayment.TransactionConfirmationData);
             }
+
+            stats.Blocks = statsResult.Blocks?.Select(mapper.Map<Responses.Block>).ToList();
 
             stats.PerformanceSamples = await GetMinerPerformanceInternal(perfMode, pool, address, ct);
         }
@@ -587,7 +595,7 @@ public class PoolApiController : ApiControllerBase
         if(pool.Template.Family == CoinFamily.Ethereum)
             address = address.ToLower();
 
-        var result = await cf.Run(con=> minerRepo.GetSettingsAsync(con, null, pool.Id, address));
+        var result = await cf.Run(con => minerRepo.GetSettingsAsync(con, null, pool.Id, address));
 
         if(result == null)
             throw new ApiException("No settings found", HttpStatusCode.NotFound);
@@ -614,14 +622,14 @@ public class PoolApiController : ApiControllerBase
             throw new ApiException("Invalid IP address", HttpStatusCode.BadRequest);
 
         // fetch recent IPs
-        var ips = await cf.Run(con=> shareRepo.GetRecentyUsedIpAddressesAsync(con, null, poolId, address, ct));
+        var ips = await cf.Run(con => shareRepo.GetRecentyUsedIpAddressesAsync(con, null, poolId, address, ct));
 
         // any known ips?
         if(ips == null || ips.Length == 0)
             throw new ApiException("Address not recently used for mining", HttpStatusCode.NotFound);
 
         // match?
-        if(!ips.Any(x=> IPAddress.TryParse(x, out var ipAddress) && ipAddress.IsEqual(requestIp)))
+        if(!ips.Any(x => IPAddress.TryParse(x, out var ipAddress) && ipAddress.IsEqual(requestIp)))
             throw new ApiException("None of the recently used IP addresses matches the request", HttpStatusCode.Forbidden);
 
         // map settings
@@ -639,7 +647,7 @@ public class PoolApiController : ApiControllerBase
         {
             await minerRepo.UpdateSettingsAsync(con, tx, mapped);
 
-            logger.Info(()=> $"Updated settings for pool {pool.Id}, miner {address}");
+            logger.Info(() => $"Updated settings for pool {pool.Id}, miner {address}");
 
             var result = await minerRepo.GetSettingsAsync(con, tx, mapped.PoolId, mapped.Address);
             return mapper.Map<Responses.MinerSettings>(result);

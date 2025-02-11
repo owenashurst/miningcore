@@ -96,12 +96,16 @@ public class StatsRepository : IStatsRepository
 
         if(result != null)
         {
+            // Fetch Last Payment
             query = @"SELECT * FROM payments WHERE poolid = @poolId AND address = @miner
                 ORDER BY created DESC LIMIT 1";
-
             result.LastPayment = await con.QuerySingleOrDefaultAsync<Payment>(new CommandDefinition(query, new { poolId, miner }, tx, cancellationToken: ct));
 
-            // query timestamp of last stats update
+            // Fetch Blocks Found by Miner
+            query = @"SELECT * FROM blocks WHERE poolid = @poolId AND miner = @miner ORDER BY created DESC";
+            result.Blocks = (await con.QueryAsync<Block>(new CommandDefinition(query, new { poolId, miner }, tx, cancellationToken: ct))).ToList();
+
+            // Query last stats update timestamp
             query = @"SELECT created FROM minerstats WHERE poolid = @poolId AND miner = @miner
                 ORDER BY created DESC LIMIT 1";
 

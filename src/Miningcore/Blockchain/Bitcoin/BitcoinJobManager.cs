@@ -269,7 +269,6 @@ public class BitcoinJobManager : BitcoinJobManagerBase<BitcoinJob>
                 // to verify later on that the pool has received the reward for the block
                 share.TransactionConfirmationData = acceptResponse.CoinbaseTx;
             }
-
             else
             {
                 // clear fields that no longer apply
