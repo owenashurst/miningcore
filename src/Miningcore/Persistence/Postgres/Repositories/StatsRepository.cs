@@ -369,7 +369,23 @@ public class StatsRepository : IStatsRepository
 
     public Task<int> DeleteMinerStatsBeforeAsync(IDbConnection con, DateTime date, CancellationToken ct)
     {
-        const string query = @"DELETE FROM minerstats WHERE created < @date";
+        //const string query = @"DELETE FROM minerstats WHERE created < @date";
+
+        // We want to keep the rows with the best difficulty for each miner/worker combination
+        const string query = @"
+        DELETE FROM minerstats
+        WHERE created < @date
+        AND id NOT IN (
+            SELECT id FROM (
+                SELECT id,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY miner, worker
+                           ORDER BY bestdifficulty DESC, created DESC
+                       ) AS rk
+                FROM minerstats
+            ) t
+            WHERE t.rk = 1
+        )";
 
         return con.ExecuteAsync(new CommandDefinition(query, new { date }, cancellationToken: ct));
     }
