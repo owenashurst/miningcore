@@ -71,6 +71,8 @@ public class PoolApiController : ApiControllerBase
                 var lastBlockTime = await cf.Run(con => blocksRepo.GetLastPoolBlockTimeAsync(con, config.Id));
                 result.LastPoolBlockTime = lastBlockTime;
 
+                result.BestDifficulty = await cf.Run(con => statsRepo.GetBestDifficultyForPoolAsync(con, config.Id, ct));
+
                 if(lastBlockTime.HasValue)
                 {
                     DateTime startTime = lastBlockTime.Value;
