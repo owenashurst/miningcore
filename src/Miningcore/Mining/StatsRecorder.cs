@@ -230,6 +230,8 @@ public class StatsRecorder : BackgroundService
 
                         stats.SharesPerSecond = Math.Round(item.Count / minerHashTimeFrame, 3);
 
+                        stats.BestDifficulty = item.BestShareDifficulty;
+
                         // persist
                         await statsRepo.InsertMinerWorkerPerformanceStatsAsync(con, tx, stats, ct);
 

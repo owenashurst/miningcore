@@ -73,6 +73,7 @@ public partial class PoolInfo
     public uint TotalBlocks { get; set; }
     public DateTime? LastPoolBlockTime { get; set; }
     public double PoolEffort { get; set; }
+    public double BestDifficulty { get; set; }
 }
 
 public class GetPoolsResponse

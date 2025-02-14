@@ -25,29 +25,28 @@ public class ShareRepository : IShareRepository
 
         var pgCon = (NpgsqlConnection) con;
 
-        const string query = @"COPY shares (poolid, blockheight, difficulty,
+        const string query = @"COPY shares (poolid, blockheight, difficulty, shareDifficulty,
             networkdifficulty, miner, worker, useragent, ipaddress, source, created) FROM STDIN (FORMAT BINARY)";
 
-        await using(var writer = await pgCon.BeginBinaryImportAsync(query, ct))
+        await using var writer = await pgCon.BeginBinaryImportAsync(query, ct);
+        foreach(var share in shares)
         {
-            foreach(var share in shares)
-            {
-                await writer.StartRowAsync(ct);
+            await writer.StartRowAsync(ct);
 
-                await writer.WriteAsync(share.PoolId, ct);
-                await writer.WriteAsync((long) share.BlockHeight, NpgsqlDbType.Bigint, ct);
-                await writer.WriteAsync(share.Difficulty, NpgsqlDbType.Double, ct);
-                await writer.WriteAsync(share.NetworkDifficulty, NpgsqlDbType.Double, ct);
-                await writer.WriteAsync(share.Miner, ct);
-                await writer.WriteAsync(share.Worker, ct);
-                await writer.WriteAsync(share.UserAgent, ct);
-                await writer.WriteAsync(share.IpAddress, ct);
-                await writer.WriteAsync(share.Source, ct);
-                await writer.WriteAsync(share.Created, NpgsqlDbType.TimestampTz, ct);
-            }
-
-            await writer.CompleteAsync(ct);
+            await writer.WriteAsync(share.PoolId, ct);
+            await writer.WriteAsync((long) share.BlockHeight, NpgsqlDbType.Bigint, ct);
+            await writer.WriteAsync(share.Difficulty, NpgsqlDbType.Double, ct);
+            await writer.WriteAsync(share.ShareDifficulty, NpgsqlDbType.Double, ct);
+            await writer.WriteAsync(share.NetworkDifficulty, NpgsqlDbType.Double, ct);
+            await writer.WriteAsync(share.Miner, ct);
+            await writer.WriteAsync(share.Worker, ct);
+            await writer.WriteAsync(share.UserAgent, ct);
+            await writer.WriteAsync(share.IpAddress, ct);
+            await writer.WriteAsync(share.Source, ct);
+            await writer.WriteAsync(share.Created, NpgsqlDbType.TimestampTz, ct);
         }
+
+        await writer.CompleteAsync(ct);
     }
 
     public async Task<Share[]> ReadSharesBeforeAsync(IDbConnection con, string poolId, DateTime before,
@@ -112,7 +111,7 @@ public class ShareRepository : IShareRepository
 
     public async Task<MinerWorkerHashes[]> GetHashAccumulationBetweenAsync(IDbConnection con, string poolId, DateTime start, DateTime end, CancellationToken ct)
     {
-        const string query = @"SELECT SUM(difficulty), COUNT(difficulty), MIN(created) AS firstshare, MAX(created) AS lastshare, miner, worker FROM shares
+        const string query = @"SELECT SUM(difficulty), COUNT(difficulty), MIN(created) AS firstshare, MAX(created) AS lastshare, MAX(sharedifficulty) as bestsharedifficulty, miner, worker FROM shares
             WHERE poolid = @poolId AND created >= @start AND created <= @end
             GROUP BY miner, worker";
 

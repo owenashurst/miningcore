@@ -49,6 +49,11 @@ public class Share
     public double Difficulty { get; set; }
 
     /// <summary>
+    /// The difficulty of the share submitted as reported on the miner
+    /// </summary>
+    public double ShareDifficulty { get; set; }
+
+    /// <summary>
     /// Block this share refers to
     /// </summary>
     [ProtoMember(9)]

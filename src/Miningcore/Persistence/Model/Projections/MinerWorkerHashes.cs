@@ -6,6 +6,7 @@ public record MinerWorkerHashes
     public long Count { get; init; }
     public string Miner { get; init; }
     public string Worker { get; init; }
+    public double BestShareDifficulty { get; set; }
     public DateTime FirstShare { get; init; }
     public DateTime LastShare { get; init; }
 }

@@ -40,8 +40,8 @@ public class StatsRepository : IStatsRepository
         if(string.IsNullOrEmpty(mapped.Worker))
             mapped.Worker = string.Empty;
 
-        const string query = @"INSERT INTO minerstats(poolid, miner, worker, hashrate, sharespersecond, created)
-            VALUES(@poolid, @miner, @worker, @hashrate, @sharespersecond, @created)";
+        const string query = @"INSERT INTO minerstats(poolid, miner, worker, hashrate, sharespersecond, bestdifficulty, created)
+            VALUES(@poolid, @miner, @worker, @hashrate, @sharespersecond, @bestdifficulty, @created)";
 
         await con.ExecuteAsync(new CommandDefinition(query, mapped, tx, cancellationToken: ct));
     }
@@ -53,6 +53,15 @@ public class StatsRepository : IStatsRepository
         var entity = await con.QuerySingleOrDefaultAsync<Entities.PoolStats>(new CommandDefinition(query, new { poolId }, cancellationToken: ct));
 
         return entity == null ? null : mapper.Map<PoolStats>(entity);
+    }
+
+    public async Task<double> GetBestDifficultyForPoolAsync(IDbConnection con, string poolId, CancellationToken ct)
+    {
+        const string query = "SELECT bestdifficulty FROM minerstats WHERE poolid = @poolId ORDER BY bestdifficulty DESC FETCH NEXT 1 ROWS ONLY";
+
+        var entity = await con.QuerySingleOrDefaultAsync<double>(new CommandDefinition(query, new { poolId }, cancellationToken: ct));
+
+        return entity == null ? 0 : entity;
     }
 
     public Task<decimal> GetTotalPoolPaymentsAsync(IDbConnection con, string poolId, CancellationToken ct)
@@ -143,7 +152,8 @@ public class StatsRepository : IStatsRepository
                         Workers = stats.ToDictionary(x => x.Worker ?? string.Empty, x => new WorkerPerformanceStats
                         {
                             Hashrate = x.Hashrate,
-                            SharesPerSecond = x.SharesPerSecond
+                            SharesPerSecond = x.SharesPerSecond,
+                            BestDifficulty = x.BestDifficulty
                         }),
 
                         Created = stats.First().Created
@@ -212,7 +222,8 @@ public class StatsRepository : IStatsRepository
             Workers = x.ToDictionary(y => y.Worker, y => new WorkerPerformanceStats
             {
                 Hashrate = y.Hashrate,
-                SharesPerSecond = y.SharesPerSecond
+                SharesPerSecond = y.SharesPerSecond,
+                BestDifficulty = y.BestDifficulty
             })
         })
         .ToArray();
@@ -247,7 +258,8 @@ public class StatsRepository : IStatsRepository
             Workers = x.ToDictionary(y => y.Worker ?? string.Empty, y => new WorkerPerformanceStats
             {
                 Hashrate = y.Hashrate,
-                SharesPerSecond = y.SharesPerSecond
+                SharesPerSecond = y.SharesPerSecond,
+                BestDifficulty = y.BestDifficulty
             })
         })
         .ToArray();
@@ -282,7 +294,8 @@ public class StatsRepository : IStatsRepository
             Workers = x.ToDictionary(y => y.Worker ?? string.Empty, y => new WorkerPerformanceStats
             {
                 Hashrate = y.Hashrate,
-                SharesPerSecond = y.SharesPerSecond
+                SharesPerSecond = y.SharesPerSecond,
+                BestDifficulty = y.BestDifficulty
             })
         })
         .ToArray();
@@ -310,7 +323,8 @@ public class StatsRepository : IStatsRepository
             Workers = x.ToDictionary(y => y.Worker, y => new WorkerPerformanceStats
             {
                 Hashrate = y.Hashrate,
-                SharesPerSecond = y.SharesPerSecond
+                SharesPerSecond = y.SharesPerSecond,
+                BestDifficulty = y.BestDifficulty
             })
         })
         .ToArray();
@@ -328,12 +342,13 @@ public class StatsRepository : IStatsRepository
             		ms.miner,
             		ms.hashrate,
             		ms.sharespersecond,
+                    ms.bestdifficulty,
             		ROW_NUMBER() OVER(PARTITION BY ms.miner ORDER BY ms.hashrate DESC) AS rk
-            	FROM (SELECT miner, SUM(hashrate) AS hashrate, SUM(sharespersecond) AS sharespersecond
+            	FROM (SELECT miner, SUM(hashrate) AS hashrate, SUM(sharespersecond) AS sharespersecond, MAX(bestdifficulty) AS bestdifficulty
                    FROM minerstats
                    WHERE poolid = @poolid AND created >= @from GROUP BY miner, created) ms
             )
-            SELECT t.miner, t.hashrate, t.sharespersecond
+            SELECT t.miner, t.hashrate, t.sharespersecond, t.bestdifficulty
             FROM tmp t
             WHERE t.rk = 1
             ORDER by t.hashrate DESC

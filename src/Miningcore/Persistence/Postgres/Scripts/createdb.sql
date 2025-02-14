@@ -6,6 +6,7 @@ CREATE TABLE shares
 	blockheight BIGINT NOT NULL,
 	difficulty DOUBLE PRECISION NOT NULL,
 	networkdifficulty DOUBLE PRECISION NOT NULL,
+	sharedifficulty DOUBLE PRECISION NOT NULL,
 	miner TEXT NOT NULL,
 	worker TEXT NULL,
 	useragent TEXT NULL,
@@ -114,6 +115,7 @@ CREATE TABLE minerstats
 	worker TEXT NOT NULL,
 	hashrate DOUBLE PRECISION NOT NULL DEFAULT 0,
 	sharespersecond DOUBLE PRECISION NOT NULL DEFAULT 0,
+	bestdifficulty DOUBLE PRECISION NOT NULL DEFAULT 0,
 	created TIMESTAMPTZ NOT NULL
 );
 

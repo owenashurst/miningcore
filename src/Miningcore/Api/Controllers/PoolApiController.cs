@@ -153,6 +153,8 @@ public class PoolApiController : ApiControllerBase
             response.Pool.PoolEffort = poolEffort ?? 0;
         }
 
+        response.Pool.BestDifficulty = await cf.Run(con => statsRepo.GetBestDifficultyForPoolAsync(con, pool.Id, ct));
+
         var from = clock.Now.AddHours(-topMinersRange);
 
         response.Pool.TopMiners = (await cf.Run(con => statsRepo.PagePoolMinersByHashrateAsync(con, pool.Id, from, 0, 15, ct)))

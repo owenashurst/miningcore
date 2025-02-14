@@ -4,6 +4,8 @@ public record WorkerPerformanceStats
 {
     public double Hashrate { get; init; }
     public double SharesPerSecond { get; init; }
+
+    public double BestDifficulty { get; set; }
 }
 
 public record WorkerPerformanceStatsContainer
