@@ -372,12 +372,16 @@ public class StatsRepository : IStatsRepository
         //const string query = @"DELETE FROM minerstats WHERE created < @date";
 
         // We want to keep the rows with the best difficulty for each miner/worker combination
+        // However, we also want to delete everything if the miner has been inactive
         const string query = @"
         DELETE FROM minerstats
         WHERE created < @date
         AND id NOT IN (
             SELECT id FROM (
                 SELECT id,
+                       miner,
+                       worker,
+                       MAX(created) OVER (PARTITION BY miner, worker) AS latest_created,
                        ROW_NUMBER() OVER (
                            PARTITION BY miner, worker
                            ORDER BY bestdifficulty DESC, created DESC
@@ -385,6 +389,7 @@ public class StatsRepository : IStatsRepository
                 FROM minerstats
             ) t
             WHERE t.rk = 1
+            AND t.latest_created >= NOW() - INTERVAL '7 days'
         )";
 
         return con.ExecuteAsync(new CommandDefinition(query, new { date }, cancellationToken: ct));
