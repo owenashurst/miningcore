@@ -156,6 +156,8 @@ public class StatsRepository : IStatsRepository
                             new CommandDefinition(maxBestDifficultyQuery, new { poolId, miner }, cancellationToken: ct)))
                         .ToDictionary(x => x.Worker, x => x.MaxBestDifficulty);
 
+                    result.BestDifficulty = maxBestDifficulties.Values.Max();
+
                     // transform to dictionary
                     result.Performance = new WorkerPerformanceStatsContainer
                     {

@@ -5,7 +5,6 @@ public class MinerPerformanceStats
     public string Miner { get; set; }
     public double Hashrate { get; set; }
     public double SharesPerSecond { get; set; }
-    public double BestDifficulty { get; set; }
 }
 
 public class WorkerPerformanceStats
@@ -27,6 +26,7 @@ public class MinerStats
     public decimal PendingBalance { get; set; }
     public decimal TotalPaid { get; set; }
     public decimal TodayPaid { get; set; }
+    public double BestDifficulty { get; set; }
     public IList<Block> Blocks { get; set; }
     public DateTime? LastPayment { get; set; }
     public string LastPaymentLink { get; set; }
