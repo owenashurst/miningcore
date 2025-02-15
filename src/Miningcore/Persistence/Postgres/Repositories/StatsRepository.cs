@@ -146,6 +146,16 @@ public class StatsRepository : IStatsRepository
                         }
                     }
 
+                    // Fetch max bestdifficulty per worker separately
+                    const string maxBestDifficultyQuery = @"SELECT worker, MAX(bestdifficulty) AS max_bestdifficulty
+                                                            FROM minerstats
+                                                            WHERE poolid = @poolId AND miner = @miner
+                                                            GROUP BY worker";
+
+                    var maxBestDifficulties = (await con.QueryAsync<(string Worker, double MaxBestDifficulty)>(
+                            new CommandDefinition(maxBestDifficultyQuery, new { poolId, miner }, cancellationToken: ct)))
+                        .ToDictionary(x => x.Worker, x => x.MaxBestDifficulty);
+
                     // transform to dictionary
                     result.Performance = new WorkerPerformanceStatsContainer
                     {
@@ -153,7 +163,9 @@ public class StatsRepository : IStatsRepository
                         {
                             Hashrate = x.Hashrate,
                             SharesPerSecond = x.SharesPerSecond,
-                            BestDifficulty = x.BestDifficulty
+                            BestDifficulty = maxBestDifficulties.TryGetValue(x.Worker ?? string.Empty, out var maxBestDifficulty)
+                                ? maxBestDifficulty
+                                : x.BestDifficulty // Fallback to original value if no max exists
                         }),
 
                         Created = stats.First().Created
