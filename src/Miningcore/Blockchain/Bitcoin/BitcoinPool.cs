@@ -215,22 +215,26 @@ public class BitcoinPool : PoolBase
 
         try
         {
-
             var requestedDiff = (int) Convert.ChangeType((request.Params as JArray)[0], TypeCode.Int32)!;
 
             // client may suggest higher-than-base difficulty, but not a lower one
             var poolEndpoint = poolConfig.Ports[connection.LocalEndpoint.Port];
 
-            if(requestedDiff > poolEndpoint.Difficulty)
+            // Disable VarDiff
+            context.VarDiff = null;
+
+            if(requestedDiff >= poolEndpoint.Difficulty)
             {
                 context.SetDifficulty(requestedDiff);
-                await connection.NotifyAsync(BitcoinStratumMethods.SetDifficulty, new object[] { context.Difficulty });
+                await connection.NotifyAsync(BitcoinStratumMethods.SetDifficulty, new object[] { requestedDiff });
 
                 logger.Info(() => $"[{connection.ConnectionId}] Difficulty set to {requestedDiff} as requested by miner");
             }
-
-            context.SetDifficulty(requestedDiff);
-            await connection.NotifyAsync(BitcoinStratumMethods.SetDifficulty, new object[] { requestedDiff });
+            else
+            {
+                context.SetDifficulty(poolEndpoint.Difficulty);
+                await connection.NotifyAsync(BitcoinStratumMethods.SetDifficulty, new object[] { poolEndpoint.Difficulty });
+            }
         }
 
         catch(Exception ex)
