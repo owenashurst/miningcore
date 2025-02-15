@@ -412,7 +412,7 @@ public class StatsRepository : IStatsRepository
                     WHERE t.rk = 1
                     -- Keep records if the worker is still active (latest_created within 7 days)
                     -- OR if this record holds the highest bestdifficulty ever for the worker
-                    AND (t.latest_created >= NOW() - INTERVAL '7 days' OR t.bestdifficulty = t.overall_best_difficulty)
+                    AND (t.latest_created >= NOW() - INTERVAL '7 days' OR t.overall_best_difficulty IS NOT NULL)
                 );";
 
         return con.ExecuteAsync(new CommandDefinition(query, new { date }, cancellationToken: ct));
