@@ -394,23 +394,26 @@ public class StatsRepository : IStatsRepository
         // We want to keep the rows with the best difficulty for each miner/worker combination
         // However, we also want to delete everything if the miner has been inactive
         const string query = @"
-        DELETE FROM minerstats
-        WHERE created < @date
-        AND id NOT IN (
-            SELECT id FROM (
-                SELECT id,
-                       miner,
-                       worker,
-                       MAX(created) OVER (PARTITION BY miner, worker) AS latest_created,
-                       ROW_NUMBER() OVER (
-                           PARTITION BY miner, worker
-                           ORDER BY bestdifficulty DESC, created DESC
-                       ) AS rk
-                FROM minerstats
-            ) t
-            WHERE t.rk = 1
-            AND t.latest_created >= NOW() - INTERVAL '7 days'
-        )";
+            DELETE FROM minerstats
+                WHERE created < @date
+                AND id NOT IN (
+                    SELECT id FROM (
+                        SELECT id,
+                               miner,
+                               worker,
+                               MAX(created) OVER (PARTITION BY miner, worker) AS latest_created,
+                               MAX(bestdifficulty) OVER (PARTITION BY miner, worker) AS overall_best_difficulty,
+                               ROW_NUMBER() OVER (
+                                   PARTITION BY miner, worker
+                                   ORDER BY bestdifficulty DESC, created DESC
+                               ) AS rk
+                        FROM minerstats
+                    ) t
+                    WHERE t.rk = 1
+                    -- Keep records if the worker is still active (latest_created within 7 days)
+                    -- OR if this record holds the highest bestdifficulty ever for the worker
+                    AND (t.latest_created >= NOW() - INTERVAL '7 days' OR t.bestdifficulty = t.overall_best_difficulty)
+                );";
 
         return con.ExecuteAsync(new CommandDefinition(query, new { date }, cancellationToken: ct));
     }
