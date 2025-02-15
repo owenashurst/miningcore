@@ -350,21 +350,29 @@ public class StatsRepository : IStatsRepository
         const string query =
             @"WITH tmp AS
             (
-            	SELECT
-            		ms.miner,
-            		ms.hashrate,
-            		ms.sharespersecond,
-                    ms.bestdifficulty,
-            		ROW_NUMBER() OVER(PARTITION BY ms.miner ORDER BY ms.hashrate DESC) AS rk
-            	FROM (SELECT miner, SUM(hashrate) AS hashrate, SUM(sharespersecond) AS sharespersecond, MAX(bestdifficulty) AS bestdifficulty
-                   FROM minerstats
-                   WHERE poolid = @poolid AND created >= @from GROUP BY miner, created) ms
+                SELECT
+                    ms.miner,
+                    ms.hashrate,
+                    ms.sharespersecond,
+                    (SELECT MAX(bestdifficulty)
+                     FROM minerstats
+                     WHERE poolid = @poolid AND miner = ms.miner) AS bestdifficulty, -- Get absolute max bestdifficulty per miner
+                    ROW_NUMBER() OVER(PARTITION BY ms.miner ORDER BY ms.hashrate DESC) AS rk
+                FROM (
+                    SELECT
+                        miner,
+                        SUM(hashrate) AS hashrate,
+                        SUM(sharespersecond) AS sharespersecond
+                    FROM minerstats
+                    WHERE poolid = @poolid AND created >= @from
+                    GROUP BY miner
+                ) ms
             )
             SELECT t.miner, t.hashrate, t.sharespersecond, t.bestdifficulty
             FROM tmp t
             WHERE t.rk = 1
-            ORDER by t.hashrate DESC
-            OFFSET @offset FETCH NEXT @pageSize ROWS ONLY";
+            ORDER BY t.hashrate DESC
+            OFFSET @offset FETCH NEXT @pageSize ROWS ONLY;";
 
         return (await con.QueryAsync<Entities.MinerWorkerPerformanceStats>(new CommandDefinition(query,
                 new { poolId, from, offset = page * pageSize, pageSize }, cancellationToken: ct)))
