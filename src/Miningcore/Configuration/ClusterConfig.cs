@@ -913,14 +913,6 @@ public class Statistics
 
 }
 
-public class NicehashClusterConfig
-{
-    /// <summary>
-    /// If set to true, the Nicehash service will be started
-    /// </summary>
-    public bool EnableAutoDiff { get; set; }
-}
-
 public class ClusterMemoryConfig
 {
     /// <summary>
@@ -1004,8 +996,12 @@ public partial class ClusterConfig
     public NotificationsConfig Notifications { get; set; }
     public ApiConfig Api { get; set; }
     public Statistics Statistics { get; set; }
-    public NicehashClusterConfig Nicehash { get; set; }
     public ClusterMemoryConfig Memory { get; set; }
+
+    /// <summary>
+    /// Used for monitoring errors at sentry.io
+    /// </summary>
+    public string SentryDsn { get; set; }
 
     /// <summary>
     /// If this is enabled, shares are not written to the database
@@ -1018,12 +1014,6 @@ public partial class ClusterConfig
     /// External relays to monitor for shares (see option above)
     /// </summary>
     public ShareRelayEndpointConfig[] ShareRelays { get; set; }
-
-    /// <summary>
-    /// Maximum parallelism of Equihash solver
-    /// Increasing this value by one, increases pool peak memory consumption by 1 GB
-    /// </summary>
-    public int? EquihashMaxThreads { get; set; }
 
     /// <summary>
     /// Cryptonight maximum parallelism

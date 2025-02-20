@@ -145,6 +145,18 @@ public class Program : BackgroundService
                         throw new PoolStartupException($"Certificate file {clusterConfig.Api.Tls.TlsPfxFile} does not exist!");
                 }
 
+                if (!string.IsNullOrWhiteSpace(clusterConfig.SentryDsn))
+                {
+                    hostBuilder.ConfigureWebHostDefaults(builder =>
+                    {
+                        builder.UseSentry(o =>
+                        {
+                            o.Dsn = clusterConfig.SentryDsn;
+                            o.TracesSampleRate = 0.1;
+                        });
+                    });
+                }
+
                 hostBuilder.ConfigureWebHost(builder =>
                 {
                     builder.ConfigureServices(services =>
