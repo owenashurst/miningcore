@@ -364,8 +364,8 @@ public class StatsRepository : IStatsRepository
                 FROM (
                     SELECT
                         miner,
-                        SUM(hashrate) AS hashrate,
-                        SUM(sharespersecond) AS sharespersecond
+                        AVG(hashrate) AS hashrate,
+                        AVG(sharespersecond) AS sharespersecond
                     FROM minerstats
                     WHERE poolid = @poolid AND created >= @from
                     GROUP BY miner
