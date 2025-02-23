@@ -351,25 +351,34 @@ public class StatsRepository : IStatsRepository
         DateTime from, int page, int pageSize, CancellationToken ct)
     {
         const string query =
-            @"WITH tmp AS
-            (
+            @"WITH worker_avg AS (
                 SELECT
-                    ms.miner,
-                    ms.hashrate,
-                    ms.sharespersecond,
+                    miner,
+                    worker,
+                    AVG(hashrate) AS avg_hashrate,  -- Get the average hashrate per worker over time
+                    AVG(sharespersecond) AS avg_sharespersecond  -- Average shares per second per worker over time
+                FROM minerstats
+                WHERE poolid = @poolId AND created >= @from
+                GROUP BY miner, worker
+            ),
+            miner_totals AS (
+                SELECT
+                    miner,
+                    SUM(avg_hashrate) AS hashrate,  -- Sum averaged hashrates for all workers per miner
+                    SUM(avg_sharespersecond) AS sharespersecond  -- Sum averaged shares/sec for all workers per miner
+                FROM worker_avg
+                GROUP BY miner
+            ),
+            tmp AS (
+                SELECT
+                    mt.miner,
+                    mt.hashrate,
+                    mt.sharespersecond,
                     (SELECT MAX(bestdifficulty)
                      FROM minerstats
-                     WHERE poolid = @poolid AND miner = ms.miner) AS bestdifficulty, -- Get absolute max bestdifficulty per miner
-                    ROW_NUMBER() OVER(PARTITION BY ms.miner ORDER BY ms.hashrate DESC) AS rk
-                FROM (
-                    SELECT
-                        miner,
-                        AVG(hashrate) AS hashrate,
-                        AVG(sharespersecond) AS sharespersecond
-                    FROM minerstats
-                    WHERE poolid = @poolid AND created >= @from
-                    GROUP BY miner
-                ) ms
+                     WHERE poolid = @poolid AND miner = mt.miner) AS bestdifficulty, -- Get absolute max bestdifficulty per miner
+                    ROW_NUMBER() OVER(PARTITION BY mt.miner ORDER BY mt.hashrate DESC) AS rk
+                FROM miner_totals mt
             )
             SELECT t.miner, t.hashrate, t.sharespersecond, t.bestdifficulty
             FROM tmp t
