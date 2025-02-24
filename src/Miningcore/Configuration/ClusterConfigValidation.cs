@@ -259,6 +259,10 @@ public partial class ClusterLoggingConfig
 {
 }
 
+public partial class ClusterSentryConfig
+{
+}
+
 public partial class VarDiffConfig
 {
 }

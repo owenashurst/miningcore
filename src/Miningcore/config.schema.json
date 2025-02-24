@@ -215,6 +215,25 @@
         }
       }
     },
+      "ClusterSentryConfig": {
+          "type": [
+              "object",
+              "null"
+          ],
+          "properties": {
+              "dsn": {
+                  "type": [
+                      "string",
+                      "null"
+                  ]
+              },
+              "debug": {
+                  "type": [
+                      "boolean"
+                  ]
+              }
+          }
+      },
     "ClusterMemoryConfig": {
       "type": [
         "object",
@@ -340,17 +359,6 @@
             "string",
             "null"
           ]
-        }
-      }
-    },
-    "NicehashClusterConfig": {
-      "type": [
-        "object",
-        "null"
-      ],
-      "properties": {
-        "enableAutoDiff": {
-          "type": "boolean"
         }
       }
     },
@@ -913,11 +921,11 @@
     "logging": {
       "$ref": "#/definitions/ClusterLoggingConfig"
     },
+      "sentry": {
+          "$ref": "#/definitions/ClusterSentryConfig"
+      },
     "memory": {
       "$ref": "#/definitions/ClusterMemoryConfig"
-    },
-    "nicehash": {
-      "$ref": "#/definitions/NicehashClusterConfig"
     },
     "notifications": {
       "$ref": "#/definitions/NotificationsConfig"

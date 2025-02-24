@@ -534,6 +534,12 @@ public partial class ClusterLoggingConfig
     public bool GPDRCompliant { get; set; }
 }
 
+public partial class ClusterSentryConfig
+{
+    public string Dsn { get; set; }
+    public bool Debug { get; set; }
+}
+
 public partial class NetworkEndpointConfig
 {
     public string Host { get; set; }
@@ -990,6 +996,7 @@ public partial class ClusterConfig
 
     public string ClusterName { get; set; }
     public ClusterLoggingConfig Logging { get; set; }
+    public ClusterSentryConfig Sentry { get; set; }
     public ClusterBanningConfig Banning { get; set; }
     public PersistenceConfig Persistence { get; set; }
     public ClusterPaymentProcessingConfig PaymentProcessing { get; set; }
@@ -997,11 +1004,6 @@ public partial class ClusterConfig
     public ApiConfig Api { get; set; }
     public Statistics Statistics { get; set; }
     public ClusterMemoryConfig Memory { get; set; }
-
-    /// <summary>
-    /// Used for monitoring errors at sentry.io
-    /// </summary>
-    public string SentryDsn { get; set; }
 
     /// <summary>
     /// If this is enabled, shares are not written to the database
