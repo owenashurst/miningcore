@@ -80,6 +80,8 @@ public class AutoMapperProfile : Profile
         CreateMap<MinerWorkerPerformanceStats, Persistence.Postgres.Entities.MinerWorkerPerformanceStats>()
             .ForMember(dest => dest.Id, opt => opt.Ignore());
 
+        CreateMap<BestDifficulty, Persistence.Postgres.Entities.BestDifficulty>();
+
         //////////////////////
         // incoming mappings
 

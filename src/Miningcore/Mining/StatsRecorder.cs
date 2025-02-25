@@ -32,7 +32,8 @@ public class StatsRecorder : BackgroundService
         IMapper mapper,
         ClusterConfig clusterConfig,
         IShareRepository shareRepo,
-        IStatsRepository statsRepo)
+        IStatsRepository statsRepo,
+        IBestDifficultyRepository bestDifficultyRepo)
     {
         Contract.RequiresNonNull(ctx);
         Contract.RequiresNonNull(clock);
@@ -41,6 +42,7 @@ public class StatsRecorder : BackgroundService
         Contract.RequiresNonNull(mapper);
         Contract.RequiresNonNull(shareRepo);
         Contract.RequiresNonNull(statsRepo);
+        Contract.RequiresNonNull(bestDifficultyRepo);
 
         this.clock = clock;
         this.cf = cf;
@@ -48,6 +50,7 @@ public class StatsRecorder : BackgroundService
         this.messageBus = messageBus;
         this.shareRepo = shareRepo;
         this.statsRepo = statsRepo;
+        this.bestDifficultyRepo = bestDifficultyRepo;
         this.clusterConfig = clusterConfig;
 
         updateInterval = TimeSpan.FromSeconds(clusterConfig.Statistics?.UpdateInterval ?? 120);
@@ -60,6 +63,7 @@ public class StatsRecorder : BackgroundService
 
     private readonly IMasterClock clock;
     private readonly IStatsRepository statsRepo;
+    private readonly IBestDifficultyRepository bestDifficultyRepo;
     private readonly IConnectionFactory cf;
     private readonly IMapper mapper;
     private readonly IMessageBus messageBus;
@@ -243,6 +247,18 @@ public class StatsRecorder : BackgroundService
                         // book keeping
                         currentNonZeroMinerWorkers.Add(BuildKey(stats.Miner, stats.Worker));
                     }
+                });
+
+                await cf.RunTx(async (con, tx) =>
+                {
+                    await bestDifficultyRepo.UpsertAsync(con, tx, new BestDifficulty
+                    {
+                        PoolId = poolId,
+                        Miner = stats.Miner,
+                        Worker = stats.Worker,
+                        Difficulty = stats.BestDifficulty,
+                        Updated = now
+                    }, ct);
                 });
 
                 messageBus.NotifyHashrateUpdated(pool.Config.Id, minerTotalHashrate, stats.Miner, null);

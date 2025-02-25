@@ -147,15 +147,15 @@ public class StatsRepository : IStatsRepository
                     }
 
                     // Fetch max bestdifficulty per worker separately
-                    const string maxBestDifficultyQuery = @"SELECT worker, MAX(bestdifficulty) AS maxbestdifficulty
-                                                            FROM minerstats
+                    const string maxBestDifficultyQuery = @"SELECT worker, MAX(difficulty) AS bestdifficulty
+                                                            FROM bestdifficulty
                                                             WHERE poolid = @poolId AND miner = @miner
                                                             GROUP BY worker";
 
-                    var maxBestDifficulties = (await con.QueryAsync<(string Worker, double MaxBestDifficulty)>(
+                    var maxBestDifficulties = (await con.QueryAsync<(string Worker, double BestDifficulty)>(
                             new CommandDefinition(maxBestDifficultyQuery, new { poolId, miner }, cancellationToken: ct)))
                         .GroupBy(x => x.Worker)
-                        .ToDictionary(g => g.Key, g => g.Max(y => y.MaxBestDifficulty));
+                        .ToDictionary(g => g.Key, g => g.Max(y => y.BestDifficulty));
 
                     result.BestDifficulty = maxBestDifficulties.Values.Any() ? maxBestDifficulties.Values.Max() : 0;
 
@@ -355,8 +355,8 @@ public class StatsRepository : IStatsRepository
                 SELECT
                     miner,
                     worker,
-                    AVG(hashrate) AS avg_hashrate,  -- Get the average hashrate per worker over time
-                    AVG(sharespersecond) AS avg_sharespersecond  -- Average shares per second per worker over time
+                    AVG(hashrate) AS avg_hashrate,
+                    AVG(sharespersecond) AS avg_sharespersecond
                 FROM minerstats
                 WHERE poolid = @poolId AND created >= @from
                 GROUP BY miner, worker
@@ -364,26 +364,27 @@ public class StatsRepository : IStatsRepository
             miner_totals AS (
                 SELECT
                     miner,
-                    SUM(avg_hashrate) AS hashrate,  -- Sum averaged hashrates for all workers per miner
-                    SUM(avg_sharespersecond) AS sharespersecond  -- Sum averaged shares/sec for all workers per miner
+                    SUM(avg_hashrate) AS hashrate,
+                    SUM(avg_sharespersecond) AS sharespersecond
                 FROM worker_avg
                 GROUP BY miner
             ),
-            tmp AS (
+            miner_difficulty AS (
                 SELECT
-                    mt.miner,
-                    mt.hashrate,
-                    mt.sharespersecond,
-                    (SELECT MAX(bestdifficulty)
-                     FROM minerstats
-                     WHERE poolid = @poolid AND miner = mt.miner) AS bestdifficulty, -- Get absolute max bestdifficulty per miner
-                    ROW_NUMBER() OVER(PARTITION BY mt.miner ORDER BY mt.hashrate DESC) AS rk
-                FROM miner_totals mt
+                    miner,
+                    MAX(difficulty) AS bestdifficulty
+                FROM bestdifficulty
+                WHERE poolid = @poolId
+                GROUP BY miner
             )
-            SELECT t.miner, t.hashrate, t.sharespersecond, t.bestdifficulty
-            FROM tmp t
-            WHERE t.rk = 1
-            ORDER BY t.hashrate DESC
+            SELECT
+                mt.miner,
+                mt.hashrate,
+                mt.sharespersecond,
+                md.bestdifficulty
+            FROM miner_totals mt
+            LEFT JOIN miner_difficulty md ON mt.miner = md.miner
+            ORDER BY mt.hashrate DESC
             OFFSET @offset FETCH NEXT @pageSize ROWS ONLY;";
 
         return (await con.QueryAsync<Entities.MinerWorkerPerformanceStats>(new CommandDefinition(query,

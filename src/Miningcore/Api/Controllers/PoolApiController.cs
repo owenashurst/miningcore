@@ -31,6 +31,7 @@ public class PoolApiController : ApiControllerBase
         minerRepo = ctx.Resolve<IMinerRepository>();
         shareRepo = ctx.Resolve<IShareRepository>();
         paymentsRepo = ctx.Resolve<IPaymentRepository>();
+        bestDifficultyRepo = ctx.Resolve<IBestDifficultyRepository>();
         clock = ctx.Resolve<IMasterClock>();
         pools = ctx.Resolve<ConcurrentDictionary<string, IMiningPool>>();
         adcp = _adcp;
@@ -41,6 +42,7 @@ public class PoolApiController : ApiControllerBase
     private readonly IPaymentRepository paymentsRepo;
     private readonly IMinerRepository minerRepo;
     private readonly IShareRepository shareRepo;
+    private readonly IBestDifficultyRepository bestDifficultyRepo;
     private readonly IMasterClock clock;
     private readonly IActionDescriptorCollectionProvider adcp;
     private readonly ConcurrentDictionary<string, IMiningPool> pools;
@@ -71,7 +73,7 @@ public class PoolApiController : ApiControllerBase
                 var lastBlockTime = await cf.Run(con => blocksRepo.GetLastPoolBlockTimeAsync(con, config.Id));
                 result.LastPoolBlockTime = lastBlockTime;
 
-                result.BestDifficulty = await cf.Run(con => statsRepo.GetBestDifficultyForPoolAsync(con, config.Id, ct));
+                result.BestDifficulty = await cf.Run(con => bestDifficultyRepo.GetBestDifficultyForPoolAsync(con, config.Id, ct));
 
                 if(lastBlockTime.HasValue)
                 {
@@ -155,7 +157,7 @@ public class PoolApiController : ApiControllerBase
             response.Pool.PoolEffort = poolEffort ?? 0;
         }
 
-        response.Pool.BestDifficulty = await cf.Run(con => statsRepo.GetBestDifficultyForPoolAsync(con, pool.Id, ct));
+        response.Pool.BestDifficulty = await cf.Run(con => bestDifficultyRepo.GetBestDifficultyForPoolAsync(con, pool.Id, ct));
 
         var from = clock.Now.AddHours(-topMinersRange);
 

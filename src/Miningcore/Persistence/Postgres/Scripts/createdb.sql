@@ -122,3 +122,16 @@ CREATE TABLE minerstats
 CREATE INDEX IDX_MINERSTATS_POOL_CREATED on minerstats(poolid, created);
 CREATE INDEX IDX_MINERSTATS_POOL_MINER_CREATED on minerstats(poolid, miner, created);
 CREATE INDEX IDX_MINERSTATS_POOL_MINER_WORKER_CREATED_HASHRATE on minerstats(poolid,miner,worker,created desc,hashrate);
+
+CREATE TABLE bestdifficulty (
+    poolid TEXT NOT NULL,
+    miner TEXT NOT NULL,
+    worker TEXT NOT NULL,
+    difficulty DOUBLE PRECISION NOT NULL,
+    updated TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (poolid, miner, worker)
+);
+
+CREATE INDEX idx_bestdifficulty_poolid ON bestdifficulty(poolid);
+CREATE INDEX idx_bestdifficulty_miner_worker ON bestdifficulty(miner, worker);
+CREATE INDEX idx_bestdifficulty_difficulty ON bestdifficulty(difficulty DESC);
