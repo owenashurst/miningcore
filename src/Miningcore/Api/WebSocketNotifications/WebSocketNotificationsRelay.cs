@@ -1,7 +1,6 @@
 using System.Net.WebSockets;
 using System.Reactive.Linq;
 using Autofac;
-using Miningcore.Api.WebSocketNotifications;
 using Miningcore.Configuration;
 using Miningcore.Extensions;
 using Miningcore.Messaging;
@@ -12,7 +11,7 @@ using NLog;
 using WebSocketManager;
 using WebSocketManager.Common;
 
-namespace Miningcore.Api;
+namespace Miningcore.Api.WebSocketNotifications;
 
 public class WebSocketNotificationsRelay : WebSocketHandler
 {
@@ -45,7 +44,7 @@ public class WebSocketNotificationsRelay : WebSocketHandler
     {
         WebSocketConnectionManager.AddSocket(socket);
 
-        var greeting = ToJson(WsNotificationType.Greeting, new { Message = "Connected to Miningcore notification relay" });
+        var greeting = ToJson(WsNotificationType.Greeting, new { Message = "Connected to notification relay" });
         await socket.SendAsync(greeting, CancellationToken.None);
     }
 

@@ -24,6 +24,7 @@ using Miningcore.Api;
 using Miningcore.Api.Controllers;
 using Miningcore.Api.Middlewares;
 using Miningcore.Api.Responses;
+using Miningcore.Api.WebSocketNotifications;
 using Miningcore.Configuration;
 using Miningcore.Crypto.Hashing.Algorithms;
 using Miningcore.Extensions;

@@ -16,6 +16,7 @@ using Newtonsoft.Json.Serialization;
 using Module = Autofac.Module;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IO;
+using Miningcore.Api.WebSocketNotifications;
 using Miningcore.Pushover;
 
 namespace Miningcore;
