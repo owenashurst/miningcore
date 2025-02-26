@@ -137,7 +137,7 @@ public class StratumConnection
                 sendQueue.Complete();
 
                 // additional safety net to ensure remaining tasks don't linger
-                cts.Cancel();
+                await cts.CancelAsync();
 
                 // Signal completion or error
                 var error = tasks.FirstOrDefault(t => t.IsFaulted)?.Exception;
@@ -285,7 +285,7 @@ public class StratumConnection
                 }
             } while(position != null);
 
-            receivePipe.Reader.AdvanceTo(buffer.Start, buffer.End);
+            receivePipe.Reader.AdvanceTo(buffer.Start);
 
             if(result.IsCompleted)
                 break;
