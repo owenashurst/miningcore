@@ -260,7 +260,7 @@ public class Program : BackgroundService
             if(!string.IsNullOrEmpty(ex.Message))
                 await Console.Error.WriteLineAsync(ex.Message);
 
-            await Console.Error.WriteLineAsync("\nCluster cannot start. Good Bye!");
+            await Console.Error.WriteLineAsync("\nCluster cannot start. Please resolve any errors.");
         }
 
         catch(JsonException)
@@ -278,7 +278,7 @@ public class Program : BackgroundService
             if(ex.InnerExceptions.First() is not PoolStartupException)
                 Console.Error.WriteLine(ex);
 
-            await Console.Error.WriteLineAsync("Cluster cannot start. Good Bye!");
+            await Console.Error.WriteLineAsync("Cluster cannot start. Please resolve any errors.");
         }
 
         catch(OperationCanceledException)
@@ -290,7 +290,7 @@ public class Program : BackgroundService
         {
             Console.Error.WriteLine(ex);
 
-            await Console.Error.WriteLineAsync("Cluster cannot start. Good Bye!");
+            await Console.Error.WriteLineAsync("Cluster cannot start. Please resolve any errors.");
         }
     }
 
@@ -388,7 +388,7 @@ public class Program : BackgroundService
                     var _logger = pse.PoolId != null ? LogUtil.GetPoolScopedLogger(GetType(), pse.PoolId) : logger;
                     _logger.Error(() => $"{pse.Message}");
 
-                    logger.Error(() => "Cluster cannot start. Good Bye!");
+                    logger.Error(() => "Cluster cannot start. Please resolve any errors.");
 
                     hal.StopApplication();
                     break;
