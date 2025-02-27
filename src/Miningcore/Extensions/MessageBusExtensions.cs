@@ -24,7 +24,7 @@ public static class MessageBusExtensions
             BlockHeight = block.BlockHeight,
             Symbol = coin.Symbol,
             Name = coin.CanonicalName ?? coin.Name,
-            Miner = block.Miner,
+            //Miner = block.Miner,
             MinerExplorerLink = minerExplorerLink,
             Source = block.Source,
         });

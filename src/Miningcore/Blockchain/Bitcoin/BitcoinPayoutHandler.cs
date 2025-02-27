@@ -123,7 +123,7 @@ public class BitcoinPayoutHandler : PayoutHandlerBase,
 
                         logger.Info(() => $"[{LogCategory}] Block {block.BlockHeight} classified as orphaned due to daemon error {cmdResult.Error.Code}");
 
-                        messageBus.NotifyBlockUnlocked(poolConfig.Id, block, coin);
+                        //messageBus.NotifyBlockUnlocked(poolConfig.Id, block, coin);
                     }
 
                     else
@@ -139,7 +139,7 @@ public class BitcoinPayoutHandler : PayoutHandlerBase,
 
                     logger.Info(() => $"[{LogCategory}] Block {block.BlockHeight} classified as orphaned due to missing tx details");
 
-                    messageBus.NotifyBlockUnlocked(poolConfig.Id, block, coin);
+                    //messageBus.NotifyBlockUnlocked(poolConfig.Id, block, coin);
                 }
 
                 else
@@ -152,7 +152,7 @@ public class BitcoinPayoutHandler : PayoutHandlerBase,
                             block.Reward = transactionInfo.Amount;  // update actual block-reward from coinbase-tx
                             result.Add(block);
 
-                            messageBus.NotifyBlockConfirmationProgress(poolConfig.Id, block, coin);
+                            //messageBus.NotifyBlockConfirmationProgress(poolConfig.Id, block, coin);
                             break;
 
                         case "generate":
@@ -164,7 +164,7 @@ public class BitcoinPayoutHandler : PayoutHandlerBase,
 
                             logger.Info(() => $"[{LogCategory}] Unlocked block {block.BlockHeight} worth {FormatAmount(block.Reward)}");
 
-                            messageBus.NotifyBlockUnlocked(poolConfig.Id, block, coin);
+                            //messageBus.NotifyBlockUnlocked(poolConfig.Id, block, coin);
                             break;
 
                         default:
@@ -174,7 +174,7 @@ public class BitcoinPayoutHandler : PayoutHandlerBase,
                             block.Reward = 0;
                             result.Add(block);
 
-                            messageBus.NotifyBlockUnlocked(poolConfig.Id, block, coin);
+                            //messageBus.NotifyBlockUnlocked(poolConfig.Id, block, coin);
                             break;
                     }
                 }

@@ -143,7 +143,6 @@ public class StatsRecorder : BackgroundService
 
                 messageBus.NotifyHashrateUpdated(pool.Config.Id, poolHashrate);
             }
-
             else
             {
                 // reset
@@ -240,7 +239,7 @@ public class StatsRecorder : BackgroundService
                         await statsRepo.InsertMinerWorkerPerformanceStatsAsync(con, tx, stats, ct);
 
                         // broadcast
-                        messageBus.NotifyHashrateUpdated(pool.Config.Id, minerHashrate, stats.Miner, stats.Worker);
+                        //messageBus.NotifyHashrateUpdated(pool.Config.Id, minerHashrate, stats.Miner, stats.Worker);
 
                         logger.Info(() => $"[{poolId}] Worker {stats.Miner}{(!string.IsNullOrEmpty(stats.Worker) ? $".{stats.Worker}" : string.Empty)}: {FormatUtil.FormatHashrate(minerHashrate)}, {stats.SharesPerSecond} shares/sec");
 
@@ -261,7 +260,7 @@ public class StatsRecorder : BackgroundService
                     }, ct);
                 });
 
-                messageBus.NotifyHashrateUpdated(pool.Config.Id, minerTotalHashrate, stats.Miner, null);
+                //messageBus.NotifyHashrateUpdated(pool.Config.Id, minerTotalHashrate, stats.Miner, null);
 
                 logger.Info(() => $"[{poolId}] Miner {stats.Miner}: {FormatUtil.FormatHashrate(minerTotalHashrate)}");
             }
@@ -290,7 +289,7 @@ public class StatsRecorder : BackgroundService
                         await statsRepo.InsertMinerWorkerPerformanceStatsAsync(con, tx, stats, ct);
 
                         // broadcast
-                        messageBus.NotifyHashrateUpdated(pool.Config.Id, 0, stats.Miner, stats.Worker);
+                        //messageBus.NotifyHashrateUpdated(pool.Config.Id, 0, stats.Miner, stats.Worker);
 
                         if(string.IsNullOrEmpty(stats.Worker))
                             logger.Info(() => $"[{poolId}] Reset performance stats for miner {stats.Miner}");
