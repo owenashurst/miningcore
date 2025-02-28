@@ -124,9 +124,7 @@ public class StratumConnection
                 // Async I/O loop(s)
                 var tasks = new[]
                 {
-                    FillReceivePipeAsync(cts.Token),
-                    ProcessReceivePipeAsync(cts.Token, endpoint.PoolEndpoint.TcpProxyProtocol, onRequestAsync),
-                    ProcessSendQueueAsync(cts.Token)
+                    FillReceivePipeAsync(cts.Token), ProcessReceivePipeAsync(cts.Token, endpoint.PoolEndpoint.TcpProxyProtocol, onRequestAsync), ProcessSendQueueAsync(cts.Token)
                 };
 
                 await Task.WhenAny(tasks);
@@ -259,33 +257,27 @@ public class StratumConnection
             logger.Debug(() => $"[{ConnectionId}] [PIPE] Waiting for data ...");
 
             var result = await receivePipe.Reader.ReadAsync(ct);
-
             var buffer = result.Buffer;
             SequencePosition? position;
 
             if(buffer.Length > MaxInboundRequestLength)
                 throw new InvalidDataException($"Incoming data exceeds maximum of {MaxInboundRequestLength}");
 
-            logger.Debug(() => $"[{ConnectionId}] [PIPE] Received data: {result.Buffer.AsString(Encoding)}");
+            logger.Debug(() => $"[{ConnectionId}] [PIPE] Received data (Length: {buffer.Length})");
 
-            do
+            while((position = buffer.PositionOf((byte) '\n')) != null)
             {
-                // Scan buffer for line terminator
-                position = buffer.PositionOf((byte) '\n');
+                var slice = buffer.Slice(0, position.Value);
 
-                if(position != null)
-                {
-                    var slice = buffer.Slice(0, position.Value);
+                if(!expectingProxyHeader || !ProcessProxyHeader(slice, proxyProtocol))
+                    await ProcessRequestAsync(ct, onRequestAsync, slice);
 
-                    if(!expectingProxyHeader || !ProcessProxyHeader(slice, proxyProtocol))
-                        await ProcessRequestAsync(ct, onRequestAsync, slice);
+                // Move past the processed data
+                buffer = buffer.Slice(buffer.GetPosition(1, position.Value));
+            }
 
-                    // Skip consumed section
-                    buffer = buffer.Slice(buffer.GetPosition(1, position.Value));
-                }
-            } while(position != null);
-
-            receivePipe.Reader.AdvanceTo(buffer.Start);
+            // Advance the reader correctly
+            receivePipe.Reader.AdvanceTo(buffer.Start, buffer.End);
 
             if(result.IsCompleted)
                 break;
@@ -305,7 +297,7 @@ public class StratumConnection
             var cb = await socket.ReceiveAsync(buf.AsMemory()[..BufSize], SocketFlags.Peek, ct);
 
             if(cb == 0)
-                return false;   // End of stream
+                return false; // End of stream
 
             if(cb < BufSize)
                 throw new Exception($"Failed to peek at connection's first {BufSize} byte(s)");
@@ -343,7 +335,7 @@ public class StratumConnection
         await using var stream = rmsm.GetStream(nameof(StratumConnection)) as RecyclableMemoryStream;
 
         // serialize
-        await using (var writer = new StreamWriter(stream!, Encoding, -1, true))
+        await using(var writer = new StreamWriter(stream!, Encoding, -1, true))
         {
             serializer.Serialize(writer, msg);
         }
@@ -392,7 +384,10 @@ public class StratumConnection
         {
             var proxyAddresses = proxyProtocol.ProxyAddresses?.Select(IPAddress.Parse).ToArray();
             if(proxyAddresses == null || !proxyAddresses.Any())
-                proxyAddresses = new[] { IPAddress.Loopback, IPUtils.IPv4LoopBackOnIPv6, IPAddress.IPv6Loopback };
+                proxyAddresses = new[]
+                {
+                    IPAddress.Loopback, IPUtils.IPv4LoopBackOnIPv6, IPAddress.IPv6Loopback
+                };
 
             if(proxyAddresses.Any(x => x.Equals(peerAddress)))
             {
