@@ -237,6 +237,14 @@ public class StatsRecorder : BackgroundService
 
                         // persist
                         await statsRepo.InsertMinerWorkerPerformanceStatsAsync(con, tx, stats, ct);
+                        await bestDifficultyRepo.UpsertAsync(con, tx, new BestDifficulty
+                        {
+                            PoolId = poolId,
+                            Miner = stats.Miner,
+                            Worker = stats.Worker,
+                            Difficulty = stats.BestDifficulty,
+                            Updated = now
+                        }, ct);
 
                         // broadcast
                         //messageBus.NotifyHashrateUpdated(pool.Config.Id, minerHashrate, stats.Miner, stats.Worker);
@@ -246,18 +254,6 @@ public class StatsRecorder : BackgroundService
                         // book keeping
                         currentNonZeroMinerWorkers.Add(BuildKey(stats.Miner, stats.Worker));
                     }
-                });
-
-                await cf.RunTx(async (con, tx) =>
-                {
-                    await bestDifficultyRepo.UpsertAsync(con, tx, new BestDifficulty
-                    {
-                        PoolId = poolId,
-                        Miner = stats.Miner,
-                        Worker = stats.Worker,
-                        Difficulty = stats.BestDifficulty,
-                        Updated = now
-                    }, ct);
                 });
 
                 //messageBus.NotifyHashrateUpdated(pool.Config.Id, minerTotalHashrate, stats.Miner, null);
