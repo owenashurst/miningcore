@@ -21,14 +21,22 @@ public class BestDifficultyRepository(IMapper mapper) : IBestDifficultyRepositor
     {
         var mapped = mapper.Map<Entities.BestDifficulty>(bestDifficulty);
 
+        // Only update if the new difficulty is greater than the existing one
         const string query = @"
-        INSERT INTO bestdifficulty(poolid, miner, worker, difficulty, updated)
-        VALUES(@poolid, @miner, @worker, @difficulty, @updated)
-        ON CONFLICT (poolid, miner, worker)
-        DO UPDATE SET
-            difficulty = EXCLUDED.difficulty,
-            updated = EXCLUDED.updated
-        WHERE bestdifficulty.difficulty < EXCLUDED.difficulty"; // Only update if new difficulty is greater
+            INSERT INTO bestdifficulty(poolid, miner, worker, difficulty, updated)
+            VALUES(@poolid, @miner, @worker, @difficulty, @updated)
+            ON CONFLICT (poolid, miner, worker)
+            DO UPDATE SET
+                difficulty = CASE
+                                WHEN bestdifficulty.difficulty < EXCLUDED.difficulty
+                                THEN EXCLUDED.difficulty
+                                ELSE bestdifficulty.difficulty
+                            END,
+                updated = CASE
+                             WHEN bestdifficulty.difficulty < EXCLUDED.difficulty
+                             THEN EXCLUDED.updated
+                             ELSE bestdifficulty.updated
+                          END";
 
         return con.ExecuteAsync(new CommandDefinition(query, mapped, tx, cancellationToken: ct));
     }
