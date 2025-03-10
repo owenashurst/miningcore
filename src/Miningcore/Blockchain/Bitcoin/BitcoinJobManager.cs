@@ -89,7 +89,7 @@ public class BitcoinJobManager : BitcoinJobManagerBase<BitcoinJob>
             // may happen if daemon is currently not connected to peers
             if(response.Error != null)
             {
-                logger.Warn(() => $"Unable to update job. Daemon responded with: {response.Error.Message} Code {response.Error.Code}");
+                logger.Error(response.Error?.InnerException, () => $"Unable to update job. Daemon responded with: {response.Error.Message} Code {response.Error.Code}. Inner Exception Message: {response.Error?.InnerException?.Message}");
                 return (false, forceUpdate);
             }
 
