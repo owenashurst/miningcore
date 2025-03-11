@@ -47,13 +47,6 @@ public class RpcClient
     private readonly IMessageBus messageBus;
     private readonly string poolId;
 
-    private static readonly HttpClient httpClient = new(new HttpClientHandler
-    {
-        AutomaticDecompression = DecompressionMethods.All,
-
-        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true,
-    });
-
     #region API-Surface
 
     public async Task<RpcResponse<TResponse>> ExecuteAsync<TResponse>(ILogger logger, string method, CancellationToken ct,
@@ -146,45 +139,35 @@ public class RpcClient
         if(!string.IsNullOrEmpty(endPoint.HttpPath))
             requestUrl += $"{(endPoint.HttpPath.StartsWith("/") ? string.Empty : "/")}{endPoint.HttpPath}";
 
-        using(var request = new HttpRequestMessage(HttpMethod.Post, requestUrl))
+        using var httpClient = new HttpClient();
+        using var request = new HttpRequestMessage(HttpMethod.Post, requestUrl);
+
+        // content
+        var json = JsonConvert.SerializeObject(rpcRequest, serializerSettings);
+        request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        // auth header
+        if(!string.IsNullOrEmpty(endPoint.User))
         {
-            if(endPoint.Http2)
-                request.Version = new Version(2, 0);
-            else
-                request.Headers.ConnectionClose = false;    // enable keep-alive
-
-            // content
-            var json = JsonConvert.SerializeObject(rpcRequest, serializerSettings);
-            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            // auth header
-            if(!string.IsNullOrEmpty(endPoint.User))
-            {
-                var auth = $"{endPoint.User}:{endPoint.Password}";
-                request.Headers.Authorization = new AuthenticationHeaderValue("Basic", auth.ToByteArrayBase64());
-            }
-
-            logger.Trace(() => $"Sending RPC request to {requestUrl}: {json}");
-
-            // send request
-            using(var response = await httpClient.SendAsync(request, ct))
-            {
-                // read response
-                var responseContent = await response.Content.ReadAsStringAsync(ct);
-
-                logger.Trace(() => $"Received RPC response: {responseContent}");
-
-                // deserialize response
-                using(var jreader = new JsonTextReader(new StringReader(responseContent)))
-                {
-                    var result = serializer.Deserialize<JsonRpcResponse>(jreader);
-
-                    messageBus.SendTelemetry(poolId, TelemetryCategory.RpcRequest, method, sw.Elapsed, response.IsSuccessStatusCode);
-
-                    return result;
-                }
-            }
+            var auth = $"{endPoint.User}:{endPoint.Password}";
+            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", auth.ToByteArrayBase64());
         }
+
+        logger.Trace(() => $"Sending RPC request to {requestUrl}: {json}");
+
+        // send request
+        using var response = await httpClient.SendAsync(request, ct);
+        var responseContent = await response.Content.ReadAsStringAsync(ct);
+
+        logger.Trace(() => $"Received RPC response: {responseContent}");
+
+        // deserialize response
+        await using var jreader = new JsonTextReader(new StringReader(responseContent));
+        var result = serializer.Deserialize<JsonRpcResponse>(jreader);
+
+        messageBus.SendTelemetry(poolId, TelemetryCategory.RpcRequest, method, sw.Elapsed, response.IsSuccessStatusCode);
+
+        return result;
     }
 
     private async Task<JsonRpcResponse<JToken>[]> BatchRequestAsync(ILogger logger, CancellationToken ct, DaemonEndpointConfig endPoint, RpcRequest[] batch)
@@ -200,45 +183,35 @@ public class RpcClient
         if(!string.IsNullOrEmpty(endPoint.HttpPath))
             requestUrl += $"{(endPoint.HttpPath.StartsWith("/") ? string.Empty : "/")}{endPoint.HttpPath}";
 
-        using(var request = new HttpRequestMessage(HttpMethod.Post, requestUrl))
+        using var httpClient = new HttpClient();
+        using var request = new HttpRequestMessage(HttpMethod.Post, requestUrl);
+        // content
+        var json = JsonConvert.SerializeObject(rpcRequests, serializerSettings);
+        request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        // auth header
+        if(!string.IsNullOrEmpty(endPoint.User))
         {
-            if(endPoint.Http2)
-                request.Version = new Version(2, 0);
-            else
-                request.Headers.ConnectionClose = false;    // enable keep-alive
-
-            // content
-            var json = JsonConvert.SerializeObject(rpcRequests, serializerSettings);
-            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            // auth header
-            if(!string.IsNullOrEmpty(endPoint.User))
-            {
-                var auth = $"{endPoint.User}:{endPoint.Password}";
-                request.Headers.Authorization = new AuthenticationHeaderValue("Basic", auth.ToByteArrayBase64());
-            }
-
-            logger.Trace(() => $"Sending RPC request to {requestUrl}: {json}");
-
-            // send request
-            using(var response = await httpClient.SendAsync(request, ct))
-            {
-                // deserialize response
-                var responseContent = await response.Content.ReadAsStringAsync(ct);
-
-                logger.Trace(() => $"Received RPC response: {responseContent}");
-
-                using(var jreader = new JsonTextReader(new StringReader(responseContent)))
-                {
-                    var result = serializer.Deserialize<JsonRpcResponse<JToken>[]>(jreader);
-
-                    messageBus.SendTelemetry(poolId, TelemetryCategory.RpcRequest, string.Join(", ", batch.Select(x => x.Method)),
-                        sw.Elapsed, response.IsSuccessStatusCode);
-
-                    return result;
-                }
-            }
+            var auth = $"{endPoint.User}:{endPoint.Password}";
+            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", auth.ToByteArrayBase64());
         }
+
+        logger.Trace(() => $"Sending RPC request to {requestUrl}: {json}");
+
+        // send request
+        using var response = await httpClient.SendAsync(request, ct);
+
+        var responseContent = await response.Content.ReadAsStringAsync(ct);
+
+        logger.Trace(() => $"Received RPC response: {responseContent}");
+
+        await using var jreader = new JsonTextReader(new StringReader(responseContent));
+        var result = serializer.Deserialize<JsonRpcResponse<JToken>[]>(jreader);
+
+        messageBus.SendTelemetry(poolId, TelemetryCategory.RpcRequest, string.Join(", ", batch.Select(x => x.Method)),
+            sw.Elapsed, response.IsSuccessStatusCode);
+
+        return result;
     }
 
     protected string GetRequestId()
@@ -346,19 +319,17 @@ public class RpcClient
                 {
                     try
                     {
-                        using(var subSocket = new ZSocket(ZSocketType.SUB))
+                        using var subSocket = new ZSocket(ZSocketType.SUB);
+                        //subSocket.Options.ReceiveHighWatermark = 1000;
+                        subSocket.Connect(url);
+                        subSocket.Subscribe(topic);
+
+                        logger.Debug($"Subscribed to {url}/{topic}");
+
+                        while(!tcs.IsCancellationRequested)
                         {
-                            //subSocket.Options.ReceiveHighWatermark = 1000;
-                            subSocket.Connect(url);
-                            subSocket.Subscribe(topic);
-
-                            logger.Debug($"Subscribed to {url}/{topic}");
-
-                            while(!tcs.IsCancellationRequested)
-                            {
-                                var msg = subSocket.ReceiveMessage();
-                                obs.OnNext(msg);
-                            }
+                            var msg = subSocket.ReceiveMessage();
+                            obs.OnNext(msg);
                         }
                     }
 
