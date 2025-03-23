@@ -147,10 +147,10 @@ public class StatsRepository : IStatsRepository
                     }
 
                     // Fetch max bestdifficulty per worker separately
-                    const string maxBestDifficultyQuery = @"SELECT worker, MAX(difficulty) AS bestdifficulty
+                    const string maxBestDifficultyQuery = @"SELECT DISTINCT ON (worker) worker, difficulty AS bestdifficulty
                                                             FROM bestdifficulty
                                                             WHERE poolid = @poolId AND miner = @miner
-                                                            GROUP BY worker";
+                                                            ORDER BY worker, difficulty DESC;";
 
                     var maxBestDifficulties = (await con.QueryAsync<(string Worker, double BestDifficulty)>(
                             new CommandDefinition(maxBestDifficultyQuery, new { poolId, miner }, cancellationToken: ct)))

@@ -394,7 +394,7 @@ public class PoolApiController : ApiControllerBase
             address = address.ToLower();
 
         var statsResult = await cf.RunTx((con, tx) =>
-            statsRepo.GetMinerStatsAsync(con, tx, pool.Id, address, ct), true, IsolationLevel.Serializable);
+            statsRepo.GetMinerStatsAsync(con, tx, pool.Id, address, ct), true, IsolationLevel.ReadCommitted);
 
         Responses.MinerStats stats = null;
 
