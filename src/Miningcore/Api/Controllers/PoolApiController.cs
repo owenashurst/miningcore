@@ -16,7 +16,9 @@ using System.Data;
 using System.Globalization;
 using System.Net;
 using Microsoft.AspNetCore.Mvc.ActionConstraints;
+using Microsoft.Extensions.Caching.Memory;
 using NLog;
+using MinerStats = Miningcore.Api.Responses.MinerStats;
 
 namespace Miningcore.Api.Controllers;
 
@@ -36,6 +38,11 @@ public class PoolApiController : ApiControllerBase
         pools = ctx.Resolve<ConcurrentDictionary<string, IMiningPool>>();
         adcp = _adcp;
     }
+
+    private static readonly IMemoryCache Cache = new MemoryCache(new MemoryCacheOptions
+    {
+        ExpirationScanFrequency = TimeSpan.FromSeconds(60)
+    });
 
     private readonly IStatsRepository statsRepo;
     private readonly IBlockRepository blocksRepo;
@@ -384,6 +391,11 @@ public class PoolApiController : ApiControllerBase
     public async Task<Responses.MinerStats> GetMinerInfoAsync(
         string poolId, string address, [FromQuery] SampleRange perfMode = SampleRange.Day)
     {
+        var cacheKey = $"{poolId}-{address}";
+
+        Cache.TryGetValue(cacheKey, out MinerStats? existingMinerStats);
+        if(existingMinerStats is not null) return existingMinerStats;
+
         var pool = GetPool(poolId);
         var ct = HttpContext.RequestAborted;
 
@@ -394,7 +406,7 @@ public class PoolApiController : ApiControllerBase
             address = address.ToLower();
 
         var statsResult = await cf.RunTx((con, tx) =>
-            statsRepo.GetMinerStatsAsync(con, tx, pool.Id, address, ct), true, IsolationLevel.ReadCommitted);
+            statsRepo.GetMinerStatsAsync(con, tx, pool.Id, address, ct), true, IsolationLevel.ReadUncommitted);
 
         Responses.MinerStats stats = null;
 
@@ -422,6 +434,8 @@ public class PoolApiController : ApiControllerBase
 
             stats.PerformanceSamples = await GetMinerPerformanceInternal(perfMode, pool, address, ct);
         }
+
+        Cache.Set(cacheKey, stats, DateTimeOffset.UtcNow.AddMinutes(1));
 
         return stats;
     }
