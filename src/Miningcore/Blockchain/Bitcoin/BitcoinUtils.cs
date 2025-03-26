@@ -63,4 +63,53 @@ public static class BitcoinUtils
         var pubKeyAddress = bcashNetwork.Parse<NBitcoin.Altcoins.BCash.BTrashPubKeyAddress>(address);
         return pubKeyAddress.ScriptPubKey.GetDestinationAddress(bcashNetwork);
     }
+
+    public static IDestination DgbAddressToDestination(string address, Network network)
+    {
+        // Build a custom DigiByte network using NetworkBuilder.
+            // We set only the parameters required for address encoding/decoding.
+            // Note: For parsing, dummy values for consensus (e.g. genesis hash) and magic are acceptable.
+            var digiByteNetwork = new NetworkBuilder()
+                .SetName($"Digibyte-{network.Name}")
+                .SetConsensus(new Consensus
+                {
+                    SubsidyHalvingInterval = 840000,
+                    MajorityEnforceBlockUpgrade = 750,
+                    MajorityRejectBlockOutdated = 950,
+                    MajorityWindow = 1000,
+                    PowLimit = new Target(new uint256("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")),
+                    PowTargetTimespan = TimeSpan.FromMinutes(1),
+                    PowTargetSpacing = TimeSpan.FromMinutes(1),
+                    PowAllowMinDifficultyBlocks = false,
+                    PowNoRetargeting = false,
+                    RuleChangeActivationThreshold = 1916,
+                    MinerConfirmationWindow = 2016
+                })
+                // Dummy magic value – only matters for p2p, not for address parsing.
+                .SetMagic(0xF9BEB4D9)
+                .SetPort(12024)
+                .SetRPCPort(14022)
+                // Set DigiByte legacy (Base58) parameters.
+                .SetBase58Bytes(Base58Type.PUBKEY_ADDRESS, new byte[]
+                {
+                    0x1E
+                }) // DigiByte P2PKH addresses start with "D"
+                .SetBase58Bytes(Base58Type.SCRIPT_ADDRESS, new byte[]
+                {
+                    0x3F
+                })
+                .SetBase58Bytes(Base58Type.SECRET_KEY, new byte[]
+                {
+                    0x80
+                })
+                // Set the Bech32 human-readable part for DigiByte.
+                .SetBech32(Bech32Type.WITNESS_PUBKEY_ADDRESS, "dgb")
+                .SetBech32(Bech32Type.WITNESS_SCRIPT_ADDRESS, "dgb")
+                .BuildAndRegister();
+
+        // Parse the bech32 address using the custom DigiByte network.
+        BitcoinAddress parsedAddress = BitcoinAddress.Create(address, digiByteNetwork);
+
+        return parsedAddress;
+    }
 }

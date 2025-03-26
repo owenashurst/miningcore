@@ -531,6 +531,9 @@ public abstract class BitcoinJobManagerBase<TJob> : JobManagerBase<TJob>
             case BitcoinAddressType.BCash:
                 return BitcoinUtils.BCashAddressToDestination(poolConfig.Address, network);
 
+            case BitcoinAddressType.DGB:
+                return BitcoinUtils.DgbAddressToDestination(poolConfig.Address, network);
+
             default:
                 return BitcoinUtils.AddressToDestination(poolConfig.Address, network);
         }

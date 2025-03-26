@@ -34,6 +34,12 @@
         <None Remove="Blockchain\Bitcoin\Transactions\**" />
         <None Remove="DataAccess\**" />
         <None Remove="Maintenance\**" />
+        <None Update="config-bitcoincash-mainnet.json">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="config-backup.json">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
         <None Update="config.json">
           <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
@@ -73,8 +79,8 @@
         <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.1" />
         <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.1" />
         <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.1" />
-        <PackageReference Include="NBitcoin" Version="7.0.50" />
-        <PackageReference Include="NBitcoin.Altcoins" Version="3.0.33" />
+        <PackageReference Include="NBitcoin" Version="8.0.4" />
+        <PackageReference Include="NBitcoin.Altcoins" Version="4.0.4" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="NLog" Version="5.4.0" />
         <PackageReference Include="NLog.Extensions.Logging" Version="5.4.0" />
