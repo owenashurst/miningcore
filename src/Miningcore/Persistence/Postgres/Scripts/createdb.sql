@@ -89,6 +89,7 @@ CREATE TABLE payments
 );
 
 CREATE INDEX IDX_PAYMENTS_POOL_COIN_WALLET on payments(poolid, coin, address);
+CREATE INDEX IDX_PAYMENTS_POOL_ADDRESS_CREATED ON payments(poolid, address, created);
 
 CREATE TABLE poolstats
 (
