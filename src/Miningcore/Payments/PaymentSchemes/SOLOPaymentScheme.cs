@@ -37,7 +37,7 @@ public class SOLOPaymentScheme : IPayoutScheme
 
         // calculate rewards
         var rewards = new Dictionary<string, decimal>();
-        var shareCutOffDate = CalculateRewards(block, blockReward, rewards, ct);
+        var shareCutOffDate = CalculateRewards(block, blockReward, rewards);
 
         // update balances
         foreach(var address in rewards.Keys)
@@ -68,10 +68,9 @@ public class SOLOPaymentScheme : IPayoutScheme
 
     #endregion // IPayoutScheme
 
-    private DateTime? CalculateRewards(Block block, decimal blockReward, Dictionary<string, decimal> rewards, CancellationToken ct)
+    private DateTime? CalculateRewards(Block block, decimal blockReward, Dictionary<string, decimal> rewards)
     {
         rewards[block.Miner] = blockReward;
-
         return block.Created;
     }
 }
