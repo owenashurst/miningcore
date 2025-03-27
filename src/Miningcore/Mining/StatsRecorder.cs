@@ -303,17 +303,29 @@ public class StatsRecorder : BackgroundService
     {
         logger.Info(() => "Performing Stats GC");
 
-        await cf.Run(async con =>
+        await cf.RunTx(async (con, tx) =>
         {
             var cutOff = clock.Now.Add(-cleanupDays);
 
             var rowCount = await statsRepo.DeletePoolStatsBeforeAsync(con, cutOff, ct);
             if(rowCount > 0)
+            {
                 logger.Info(() => $"Deleted {rowCount} old poolstats records");
+            }
 
             rowCount = await statsRepo.DeleteMinerStatsBeforeAsync(con, cutOff, ct);
             if(rowCount > 0)
+            {
                 logger.Info(() => $"Deleted {rowCount} old minerstats records");
+            }
+
+            // Only deletes shares for pools with 'solo' in the poolId
+            var cutOffTimePeriod = DateTime.UtcNow.AddDays(-30);
+            rowCount = await shareRepo.DeleteSharesForSoloPoolsOnlyBeforeAsync(con, tx, cutOffTimePeriod, ct);
+            if(rowCount > 0)
+            {
+                logger.Info(() => $"Deleted {rowCount} old shares from Solo Pools");
+            }
         });
 
         logger.Info(() => "Stats GC complete");

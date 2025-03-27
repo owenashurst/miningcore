@@ -95,6 +95,13 @@ public class ShareRepository : IShareRepository
         await con.ExecuteAsync(new CommandDefinition(query, new { poolId, before }, tx, cancellationToken: ct));
     }
 
+    public async Task<int> DeleteSharesForSoloPoolsOnlyBeforeAsync(IDbConnection con, IDbTransaction tx, DateTime before, CancellationToken ct)
+    {
+        const string query = @"DELETE FROM shares WHERE poolid LIKE '%solo%' AND created < @before";
+
+        return await con.ExecuteAsync(new CommandDefinition(query, new { before }, tx, cancellationToken: ct));
+    }
+
     public Task<double?> GetAccumulatedShareDifficultyBetweenAsync(IDbConnection con, string poolId, DateTime start, DateTime end, CancellationToken ct)
     {
         const string query = "SELECT SUM(difficulty) FROM shares WHERE poolid = @poolId AND created > @start AND created < @end";
